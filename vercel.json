@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "pnpm run typecheck:libs && node build-vercel.mjs",
+  "outputDirectory": "artifacts/7dogs/dist/public",
+  "functions": {
+    "api/index.mjs": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" },
+    { "source": "/((?!api(?:/|$)).*)", "destination": "/index.html" }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
