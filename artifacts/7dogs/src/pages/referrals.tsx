@@ -1,4 +1,5 @@
 import { useUser } from "@/context/user-context";
+import { useLang } from "@/context/language-context";
 import { useGetReferrals } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -7,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 
 export default function ReferralsPage() {
   const { user } = useUser();
+  const { t } = useLang();
   const { data: referrals } = useGetReferrals(
     { userId: user?.id || 0 },
     { query: { enabled: !!user?.id } }
@@ -16,15 +18,12 @@ export default function ReferralsPage() {
   const handleCopy = () => {
     if (referrals?.referralLink) {
       navigator.clipboard.writeText(referrals.referralLink);
-      toast({
-        title: "Copied!",
-        description: "Referral link copied to clipboard.",
-      });
+      toast({ title: t.copied, description: t.copiedDesc });
     }
   };
 
   if (!user || !referrals) {
-    return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+    return <div className="p-8 text-center text-muted-foreground">{t.loading}</div>;
   }
 
   const progressPercentage = Math.min(
@@ -37,29 +36,23 @@ export default function ReferralsPage() {
       <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 gold-glow">
         <Users className="w-8 h-8 text-primary" />
       </div>
-      
-      <h1 className="text-2xl font-black text-primary tracking-wide uppercase mb-2">Invite Friends</h1>
-      <p className="text-muted-foreground text-center text-sm px-4 mb-8">
-        Earn free spins and exclusive rewards for every friend who joins via your link.
-      </p>
+
+      <h1 className="text-2xl font-black text-primary tracking-wide uppercase mb-2">{t.inviteTitle}</h1>
+      <p className="text-muted-foreground text-center text-sm px-4 mb-8">{t.inviteSubtitle}</p>
 
       <div className="w-full bg-card border border-primary/20 rounded-2xl p-5 mb-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px]" />
-        
         <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
           <Gift className="w-5 h-5 text-primary" />
-          Next Reward
+          {t.nextReward}
         </h3>
-        
         <div className="flex justify-between text-sm mb-2">
-          <span className="text-muted-foreground">Progress</span>
+          <span className="text-muted-foreground">{t.progress}</span>
           <span className="font-bold text-primary">{referrals.totalReferrals} / {referrals.referralsRequired}</span>
         </div>
-        
         <Progress value={progressPercentage} className="h-2 mb-4 bg-background" />
-        
         <p className="text-sm text-muted-foreground">
-          Reward: <strong className="text-foreground">{referrals.rewardAmount} {referrals.rewardType}</strong>
+          {t.reward}: <strong className="text-foreground">{referrals.rewardAmount} {referrals.rewardType}</strong>
         </p>
       </div>
 
@@ -74,10 +67,10 @@ export default function ReferralsPage() {
       </div>
 
       <div className="w-full">
-        <h3 className="font-bold text-lg mb-4 border-b border-border pb-2">Your Network</h3>
+        <h3 className="font-bold text-lg mb-4 border-b border-border pb-2">{t.yourNetwork}</h3>
         {referrals.referralList.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm bg-card rounded-xl border border-border">
-            You haven't invited anyone yet.
+            {t.noInvites}
           </div>
         ) : (
           <div className="space-y-3">

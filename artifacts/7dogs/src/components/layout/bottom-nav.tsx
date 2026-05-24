@@ -1,18 +1,17 @@
 import { Link, useLocation } from "wouter";
 import { CircleDot, Users, Gift, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/context/user-context";
+import { useLang } from "@/context/language-context";
 
 export function BottomNav() {
   const [location] = useLocation();
-  const { user } = useUser();
-  const isAdmin = user?.username === "J_O_H_N8" || user?.username === "demo_user"; // For demo purposes
+  const { t } = useLang();
 
   const navItems = [
-    { href: "/", label: "Wheel", icon: CircleDot },
-    { href: "/referrals", label: "Referrals", icon: Users },
-    { href: "/gifts", label: "Gifts", icon: Gift },
-    { href: "/account", label: "Account", icon: UserRound },
+    { href: "/", label: t.navWheel, icon: CircleDot },
+    { href: "/referrals", label: t.navReferrals, icon: Users },
+    { href: "/gifts", label: t.navGifts, icon: Gift },
+    { href: "/account", label: t.navAccount, icon: UserRound },
   ];
 
   return (
@@ -28,7 +27,7 @@ export function BottomNav() {
                 isActive ? "text-primary gold-text-glow" : "text-muted-foreground hover:text-primary/60"
               )}>
                 <Icon size={24} className={cn(isActive && "gold-glow rounded-full p-0.5")} />
-                <span className="text-[10px] font-medium uppercase tracking-wider">{item.label}</span>
+                <span className="text-[10px] font-medium tracking-wider">{item.label}</span>
               </div>
             </Link>
           );

@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useUser } from "@/context/user-context";
+import { useLang, Lang } from "@/context/language-context";
 import { useGetWheelSegments, useSpinWheel, getGetMeQueryKey } from "@workspace/api-client-react";
 import { SpinningWheel } from "@/components/wheel/spinning-wheel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Sparkles } from "lucide-react";
+import { Coins, Sparkles, ChevronDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function WheelPage() {
   const { user } = useUser();
+  const { t, lang, setLang } = useLang();
   const { data: segments } = useGetWheelSegments();
   const spinMutation = useSpinWheel();
   const { toast } = useToast();
@@ -16,30 +18,20 @@ export default function WheelPage() {
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [landingSegmentId, setLandingSegmentId] = useState<number>();
+  const [showLangPicker, setShowLangPicker] = useState(false);
 
   const handleSpin = () => {
     if (!user) return;
     if (user.spins <= 0) {
-      toast({
-        title: "مفيش لفات!",
-        description: "ادعو أصحابك عشان تكسب لفات مجانية!",
-        variant: "destructive",
-      });
+      toast({ title: t.noSpins, description: t.noSpinsDesc, variant: "destructive" });
       return;
     }
-
     setIsSpinning(true);
     spinMutation.mutate({ data: { userId: user.id } }, {
-      onSuccess: (result) => {
-        setLandingSegmentId(result.segmentId);
-      },
+      onSuccess: (result) => setLandingSegmentId(result.segmentId),
       onError: (err) => {
         setIsSpinning(false);
-        toast({
-          title: "حصل خطأ",
-          description: err.message || "حاول تاني",
-          variant: "destructive",
-        });
+        toast({ title: t.spinError, description: err.message, variant: "destructive" });
       },
     });
   };
@@ -50,10 +42,9 @@ export default function WheelPage() {
       queryClient.invalidateQueries({ queryKey: getGetMeQueryKey({ telegramId: user.telegramId }) });
     }
     if (spinMutation.data) {
-      const reward = spinMutation.data;
       toast({
-        title: "🎉 مبروك!",
-        description: `كسبت ${reward.label} عملة!`,
+        title: t.winTitle,
+        description: t.winDesc(spinMutation.data.label),
         className: "bg-primary border-none text-primary-foreground",
       });
     }
@@ -63,23 +54,65 @@ export default function WheelPage() {
     ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName || user.username || "U")}&background=1a1a1a&color=D4AF37&size=64&bold=true`
     : null;
 
+  const langOptions: { value: Lang; label: string; flag: string }[] = [
+    { value: "en", label: "English", flag: "🇬🇧" },
+    { value: "ar", label: "العربية", flag: "🇸🇦" },
+  ];
+
   return (
     <div className="flex flex-col w-full min-h-full">
       {/* Header strip */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        {/* Left: Avatar + name */}
-        <div className="flex items-center gap-2">
-          {avatarUrl && (
-            <div className="w-10 h-10 rounded-full border-2 border-primary overflow-hidden shadow-[0_0_8px_rgba(212,175,55,0.5)]">
-              <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-            </div>
-          )}
-          <div className="flex flex-col leading-none">
-            <span className="text-foreground font-bold text-sm">{user?.firstName || "..."}</span>
-            {user?.username && (
-              <span className="text-muted-foreground text-xs">@{user.username}</span>
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 relative">
+        {/* Left: Avatar + name — clickable for language picker */}
+        <div className="relative">
+          <button
+            className="flex items-center gap-2 focus:outline-none"
+            onClick={() => setShowLangPicker((v) => !v)}
+          >
+            {avatarUrl && (
+              <div className="relative w-10 h-10 rounded-full border-2 border-primary overflow-hidden shadow-[0_0_8px_rgba(212,175,55,0.5)]">
+                <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                {/* Small flag badge */}
+                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-background flex items-center justify-center text-[9px] border border-primary/30">
+                  {lang === "ar" ? "🇸🇦" : "🇬🇧"}
+                </div>
+              </div>
             )}
-          </div>
+            <div className="flex flex-col leading-none items-start">
+              <div className="flex items-center gap-1">
+                <span className="text-foreground font-bold text-sm">{user?.firstName || "..."}</span>
+                <ChevronDown className="w-3 h-3 text-muted-foreground" />
+              </div>
+              {user?.username && (
+                <span className="text-muted-foreground text-xs">@{user.username}</span>
+              )}
+            </div>
+          </button>
+
+          {/* Language picker dropdown */}
+          {showLangPicker && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowLangPicker(false)} />
+              <div className="absolute top-full mt-2 left-0 z-50 bg-card border border-primary/30 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.5)] min-w-[160px]">
+                <p className="text-xs text-muted-foreground px-3 pt-3 pb-1 font-medium uppercase tracking-wider">
+                  {t.chooseLanguage}
+                </p>
+                {langOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    className={`w-full flex items-center gap-3 px-3 py-3 text-sm transition-colors hover:bg-primary/10 ${
+                      lang === opt.value ? "text-primary font-bold bg-primary/5" : "text-foreground"
+                    }`}
+                    onClick={() => { setLang(opt.value); setShowLangPicker(false); }}
+                  >
+                    <span className="text-base">{opt.flag}</span>
+                    <span>{opt.label}</span>
+                    {lang === opt.value && <span className="ml-auto text-primary">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right: Coins */}
@@ -106,14 +139,13 @@ export default function WheelPage() {
             onClick={handleSpin}
             disabled={isSpinning || !user || user.spins <= 0}
           >
-            {isSpinning ? "جاري اللف..." : "العب دلوقتي"}
+            {isSpinning ? t.spinning : t.spinBtn}
           </Button>
 
-          {/* Spins badge */}
           <div className="flex flex-col items-center bg-card border border-primary/40 rounded-2xl px-3 py-2 min-w-[60px] shadow-[0_0_10px_rgba(212,175,55,0.15)]">
             <Sparkles className="w-4 h-4 text-primary mb-0.5" />
             <span className="text-foreground font-black text-lg leading-none">{user?.spins ?? 0}</span>
-            <span className="text-muted-foreground text-[10px] mt-0.5">لفات</span>
+            <span className="text-muted-foreground text-[10px] mt-0.5">{t.spinsLabel}</span>
           </div>
         </div>
       </div>

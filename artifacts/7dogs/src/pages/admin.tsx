@@ -1,20 +1,22 @@
 import { useState } from "react";
 import { useUser } from "@/context/user-context";
+import { useLang } from "@/context/language-context";
 import { Redirect } from "wouter";
 import { useAdminVerify, useGetUserStats, useGetSettings } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldAlert, Users, Coins, Settings, Database, List } from "lucide-react";
+import { ShieldAlert, Users, Coins, Database, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 export default function AdminPage() {
   const { user, isLoading: userLoading } = useUser();
+  const { t } = useLang();
   const [token, setToken] = useState<string | null>(localStorage.getItem("admin_token"));
   const [password, setPassword] = useState("");
-  
+
   const verifyMutation = useAdminVerify();
   const { toast } = useToast();
 
@@ -27,38 +29,33 @@ export default function AdminPage() {
         setAuthTokenGetter(() => res.token);
       },
       onError: () => {
-        toast({ title: "Access Denied", description: "Invalid password", variant: "destructive" });
-      }
+        toast({ title: t.accessDenied, description: t.invalidPassword, variant: "destructive" });
+      },
     });
   };
 
   if (userLoading) return null;
-  
-  const isAdmin = user?.username === "J_O_H_N8";
-  if (!isAdmin) {
-    return <Redirect to="/" />;
-  }
 
-  // Set the token getter if we have it
-  if (token) {
-    setAuthTokenGetter(() => token);
-  }
+  const isAdmin = user?.username === "J_O_H_N8";
+  if (!isAdmin) return <Redirect to="/" />;
+
+  if (token) setAuthTokenGetter(() => token);
 
   if (!token) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
         <ShieldAlert className="w-16 h-16 text-destructive mb-6" />
-        <h1 className="text-2xl font-bold mb-6">Restricted Area</h1>
+        <h1 className="text-2xl font-bold mb-6">{t.restrictedArea}</h1>
         <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
-          <Input 
-            type="password" 
-            placeholder="Admin Password" 
+          <Input
+            type="password"
+            placeholder={t.adminPassword}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="bg-card border-border"
           />
           <Button type="submit" className="w-full" disabled={verifyMutation.isPending}>
-            {verifyMutation.isPending ? "Verifying..." : "Enter"}
+            {verifyMutation.isPending ? t.verifying : t.enter}
           </Button>
         </form>
       </div>
@@ -73,6 +70,7 @@ export default function AdminPage() {
 }
 
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
+  const { t } = useLang();
   const { data: stats } = useGetUserStats();
   const { data: settings } = useGetSettings();
 
@@ -80,9 +78,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     <div className="flex flex-col w-full px-4 pt-6 pb-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl font-bold text-destructive flex items-center gap-2">
-          <ShieldAlert className="w-5 h-5" /> Admin
+          <ShieldAlert className="w-5 h-5" /> {t.adminTitle}
         </h1>
-        <Button variant="ghost" size="sm" onClick={onLogout}>Logout</Button>
+        <Button variant="ghost" size="sm" onClick={onLogout}>{t.logout}</Button>
       </div>
 
       <Tabs defaultValue="stats" className="w-full">
@@ -140,8 +138,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
         <TabsContent value="users">
           <Card className="bg-card border-border p-4">
-            <p className="text-sm text-muted-foreground mb-4">User management interface (Placeholder for demo)</p>
-            {/* Real implementation would use useAdminGetUsers and a table */}
+            <p className="text-sm text-muted-foreground mb-4">User management</p>
             <div className="bg-background rounded p-4 text-center text-xs text-muted-foreground border border-dashed border-border">
               Full table coming soon
             </div>
@@ -150,7 +147,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
         <TabsContent value="wheel">
           <Card className="bg-card border-border p-4">
-            <p className="text-sm text-muted-foreground mb-4">Wheel segment editor (Placeholder)</p>
+            <p className="text-sm text-muted-foreground mb-4">Wheel segment editor</p>
             <div className="bg-background rounded p-4 text-center text-xs text-muted-foreground border border-dashed border-border">
               Segment builder coming soon
             </div>
