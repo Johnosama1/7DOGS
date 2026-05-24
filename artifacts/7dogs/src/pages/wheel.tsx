@@ -21,13 +21,13 @@ export default function WheelPage() {
     if (!user) return;
     if (user.spins <= 0) {
       toast({
-        title: "No spins left",
-        description: "Invite friends to earn more free spins!",
-        variant: "destructive"
+        title: "مفيش لفات!",
+        description: "ادعو أصحابك عشان تكسب لفات مجانية!",
+        variant: "destructive",
       });
       return;
     }
-    
+
     setIsSpinning(true);
     spinMutation.mutate({ data: { userId: user.id } }, {
       onSuccess: (result) => {
@@ -36,68 +36,86 @@ export default function WheelPage() {
       onError: (err) => {
         setIsSpinning(false);
         toast({
-          title: "Spin failed",
-          description: err.message || "An error occurred.",
-          variant: "destructive"
+          title: "حصل خطأ",
+          description: err.message || "حاول تاني",
+          variant: "destructive",
         });
-      }
+      },
     });
   };
 
   const handleSpinEnd = () => {
     setIsSpinning(false);
-    
-    // Invalidate user query to update balance
     if (user) {
       queryClient.invalidateQueries({ queryKey: getGetMeQueryKey({ telegramId: user.telegramId }) });
     }
-
     if (spinMutation.data) {
       const reward = spinMutation.data;
       toast({
-        title: "You won!",
-        description: `You received ${reward.label}.`,
+        title: "🎉 مبروك!",
+        description: `كسبت ${reward.label} عملة!`,
         className: "bg-primary border-none text-primary-foreground",
       });
     }
   };
 
+  const avatarUrl = user
+    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName || user.username || "U")}&background=1a1a1a&color=D4AF37&size=64&bold=true`
+    : null;
+
   return (
-    <div className="flex flex-col items-center w-full px-4 pt-6">
-      <div className="w-full flex justify-between items-center mb-6 px-2">
-        <div className="flex items-center gap-2 bg-card border border-primary/30 px-3 py-1.5 rounded-full gold-glow">
+    <div className="flex flex-col w-full min-h-full">
+      {/* Header strip */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        {/* Left: Avatar + name */}
+        <div className="flex items-center gap-2">
+          {avatarUrl && (
+            <div className="w-10 h-10 rounded-full border-2 border-primary overflow-hidden shadow-[0_0_8px_rgba(212,175,55,0.5)]">
+              <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="flex flex-col leading-none">
+            <span className="text-foreground font-bold text-sm">{user?.firstName || "..."}</span>
+            {user?.username && (
+              <span className="text-muted-foreground text-xs">@{user.username}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Coins */}
+        <div className="flex items-center gap-1.5 bg-card border border-primary/40 px-3 py-1.5 rounded-full shadow-[0_0_10px_rgba(212,175,55,0.2)]">
           <Coins className="w-4 h-4 text-primary" />
-          <span className="font-bold text-foreground">{user?.coins?.toLocaleString() || 0}</span>
-        </div>
-        <div className="flex items-center gap-2 bg-card border border-primary/30 px-3 py-1.5 rounded-full">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <span className="font-bold text-foreground">{user?.spins || 0} Spins</span>
+          <span className="font-bold text-foreground text-sm">{user?.coins?.toLocaleString() || 0}</span>
         </div>
       </div>
 
-      <div className="text-center mb-4">
-        <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#FFE066] to-[#D4AF37] tracking-widest uppercase">
-          VIP Lounge
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">Spin to earn luxury rewards</p>
-      </div>
+      {/* Wheel */}
+      <div className="flex-1 flex flex-col items-center px-2">
+        <SpinningWheel
+          segments={segments || []}
+          isSpinning={isSpinning}
+          landingSegmentId={landingSegmentId}
+          onSpinEnd={handleSpinEnd}
+        />
 
-      <SpinningWheel 
-        segments={segments || []} 
-        isSpinning={isSpinning} 
-        landingSegmentId={landingSegmentId}
-        onSpinEnd={handleSpinEnd}
-      />
+        {/* Spin button + spins count */}
+        <div className="w-full px-4 mt-2 flex items-center gap-3">
+          <Button
+            size="lg"
+            className="flex-1 h-14 rounded-full text-base font-black bg-gradient-to-r from-[#D4AF37] to-[#997A00] text-black hover:from-[#FFE066] hover:to-[#D4AF37] border border-[#FFE066]/50 shadow-[0_0_20px_rgba(212,175,55,0.4)] shimmer tracking-widest uppercase"
+            onClick={handleSpin}
+            disabled={isSpinning || !user || user.spins <= 0}
+          >
+            {isSpinning ? "جاري اللف..." : "العب دلوقتي"}
+          </Button>
 
-      <div className="mt-8 w-full px-4">
-        <Button 
-          size="lg" 
-          className="w-full h-16 rounded-full text-lg font-bold bg-gradient-to-r from-[#D4AF37] to-[#997A00] text-black hover:from-[#FFE066] hover:to-[#D4AF37] border border-[#FFE066]/50 shadow-[0_0_20px_rgba(212,175,55,0.4)] shimmer"
-          onClick={handleSpin}
-          disabled={isSpinning || !user || user.spins <= 0}
-        >
-          {isSpinning ? "SPINNING..." : "SPIN THE WHEEL"}
-        </Button>
+          {/* Spins badge */}
+          <div className="flex flex-col items-center bg-card border border-primary/40 rounded-2xl px-3 py-2 min-w-[60px] shadow-[0_0_10px_rgba(212,175,55,0.15)]">
+            <Sparkles className="w-4 h-4 text-primary mb-0.5" />
+            <span className="text-foreground font-black text-lg leading-none">{user?.spins ?? 0}</span>
+            <span className="text-muted-foreground text-[10px] mt-0.5">لفات</span>
+          </div>
+        </div>
       </div>
     </div>
   );

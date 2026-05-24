@@ -34,7 +34,7 @@ export default function AdminPage() {
 
   if (userLoading) return null;
   
-  const isAdmin = user?.username === "J_O_H_N8" || user?.username === "demo_user";
+  const isAdmin = user?.username === "J_O_H_N8";
   if (!isAdmin) {
     return <Redirect to="/" />;
   }
