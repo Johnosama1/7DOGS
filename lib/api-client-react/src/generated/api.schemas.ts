@@ -272,6 +272,22 @@ export interface AdminLog {
   createdAt: string;
 }
 
+export interface RequiredChannel {
+  id: number;
+  name: string;
+  username: string;
+  link: string;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface ChannelInput {
+  name: string;
+  username: string;
+  link: string;
+  enabled?: boolean;
+}
+
 export type GetMeParams = {
 telegramId: string;
 firstName?: string;
@@ -297,6 +313,14 @@ export type AdminGetUsersParams = {
 search?: string;
 page?: number;
 limit?: number;
+};
+
+export type CheckChannelMembershipParams = {
+telegramId: string;
+};
+
+export type AdminToggleChannelBody = {
+  enabled: boolean;
 };
 
 export type AdminGetLogsParams = {

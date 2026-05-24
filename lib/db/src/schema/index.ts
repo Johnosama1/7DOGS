@@ -3,3 +3,4 @@ export * from "./wheel";
 export * from "./gifts";
 export * from "./referrals";
 export * from "./settings";
+export * from "./channels";

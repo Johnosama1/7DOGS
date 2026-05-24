@@ -30,7 +30,7 @@ import {
 
 const router = Router();
 
-const ADMIN_TOKENS = new Set<string>();
+export const ADMIN_TOKENS = new Set<string>();
 
 function validateToken(req: any, res: any): boolean {
   const token = req.headers["x-admin-token"];

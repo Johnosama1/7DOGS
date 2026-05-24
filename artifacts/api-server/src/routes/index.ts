@@ -6,6 +6,8 @@ import referralsRouter from "./referrals";
 import giftsRouter from "./gifts";
 import settingsRouter from "./settings";
 import adminRouter from "./admin";
+import channelsRouter from "./channels";
+import adminChannelsRouter from "./admin-channels";
 
 const router: IRouter = Router();
 
@@ -16,5 +18,7 @@ router.use("/referrals", referralsRouter);
 router.use("/gifts", giftsRouter);
 router.use("/settings", settingsRouter);
 router.use("/admin", adminRouter);
+router.use("/channels", channelsRouter);
+router.use("/admin/channels", adminChannelsRouter);
 
 export default router;

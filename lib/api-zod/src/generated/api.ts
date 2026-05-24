@@ -487,6 +487,110 @@ export const AdminUpdateSettingsResponse = zod.object({
 
 
 /**
+ * @summary Get all enabled required channels
+ */
+export const GetChannelsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "username": zod.string(),
+  "link": zod.string(),
+  "enabled": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const GetChannelsResponse = zod.array(GetChannelsResponseItem)
+
+
+/**
+ * @summary Check which required channels the user has NOT joined yet
+ */
+export const CheckChannelMembershipQueryParams = zod.object({
+  "telegramId": zod.coerce.string()
+})
+
+export const CheckChannelMembershipResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "username": zod.string(),
+  "link": zod.string(),
+  "enabled": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const CheckChannelMembershipResponse = zod.array(CheckChannelMembershipResponseItem)
+
+
+/**
+ * @summary Get all required channels (admin)
+ */
+export const AdminGetChannelsHeader = zod.object({
+  "x-admin-token": zod.string()
+})
+
+export const AdminGetChannelsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "username": zod.string(),
+  "link": zod.string(),
+  "enabled": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const AdminGetChannelsResponse = zod.array(AdminGetChannelsResponseItem)
+
+
+/**
+ * @summary Add a required channel
+ */
+export const AdminAddChannelHeader = zod.object({
+  "x-admin-token": zod.string()
+})
+
+export const adminAddChannelBodyEnabledDefault = true;
+
+export const AdminAddChannelBody = zod.object({
+  "name": zod.string(),
+  "username": zod.string(),
+  "link": zod.string(),
+  "enabled": zod.boolean().default(adminAddChannelBodyEnabledDefault)
+})
+
+
+/**
+ * @summary Delete a required channel
+ */
+export const AdminDeleteChannelParams = zod.object({
+  "channelId": zod.coerce.number()
+})
+
+export const AdminDeleteChannelHeader = zod.object({
+  "x-admin-token": zod.string()
+})
+
+
+/**
+ * @summary Toggle channel enabled/disabled
+ */
+export const AdminToggleChannelParams = zod.object({
+  "channelId": zod.coerce.number()
+})
+
+export const AdminToggleChannelHeader = zod.object({
+  "x-admin-token": zod.string()
+})
+
+export const AdminToggleChannelBody = zod.object({
+  "enabled": zod.boolean()
+})
+
+export const AdminToggleChannelResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "username": zod.string(),
+  "link": zod.string(),
+  "enabled": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Get admin action logs
  */
 export const adminGetLogsQueryLimitDefault = 50;

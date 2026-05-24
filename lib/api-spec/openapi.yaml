@@ -17,6 +17,8 @@ tags:
     description: Referral operations
   - name: gifts
     description: Gift operations
+  - name: channels
+    description: Required channel operations
   - name: admin
     description: Admin operations
   - name: settings
@@ -561,6 +563,139 @@ paths:
               schema:
                 $ref: "#/components/schemas/AppSettings"
 
+  # ── Channels ───────────────────────────────────────────────────────
+  /channels:
+    get:
+      operationId: getChannels
+      tags: [channels]
+      summary: Get all enabled required channels
+      responses:
+        "200":
+          description: List of required channels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequiredChannel"
+
+  /channels/check:
+    get:
+      operationId: checkChannelMembership
+      tags: [channels]
+      summary: Check which required channels the user has NOT joined yet
+      parameters:
+        - in: query
+          name: telegramId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Channels the user still needs to join
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequiredChannel"
+
+  /admin/channels:
+    get:
+      operationId: adminGetChannels
+      tags: [admin]
+      summary: Get all required channels (admin)
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: All channels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequiredChannel"
+    post:
+      operationId: adminAddChannel
+      tags: [admin]
+      summary: Add a required channel
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChannelInput"
+      responses:
+        "201":
+          description: Created channel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequiredChannel"
+
+  /admin/channels/{channelId}:
+    delete:
+      operationId: adminDeleteChannel
+      tags: [admin]
+      summary: Delete a required channel
+      parameters:
+        - in: path
+          name: channelId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+    patch:
+      operationId: adminToggleChannel
+      tags: [admin]
+      summary: Toggle channel enabled/disabled
+      parameters:
+        - in: path
+          name: channelId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated channel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequiredChannel"
+
   /admin/logs:
     get:
       operationId: adminGetLogs
@@ -962,3 +1097,34 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+
+    RequiredChannel:
+      type: object
+      required: [id, name, username, link, enabled, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        username:
+          type: string
+        link:
+          type: string
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+
+    ChannelInput:
+      type: object
+      required: [name, username, link]
+      properties:
+        name:
+          type: string
+        username:
+          type: string
+        link:
+          type: string
+        enabled:
+          type: boolean
+          default: true

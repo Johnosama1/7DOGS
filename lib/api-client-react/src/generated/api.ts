@@ -23,11 +23,14 @@ import type {
   AdminGetLogsParams,
   AdminGetUsersParams,
   AdminLog,
+  AdminToggleChannelBody,
   AdminToken,
   AdminUsersPage,
   AdminVerifyInput,
   AppSettings,
   BalanceAdjustment,
+  ChannelInput,
+  CheckChannelMembershipParams,
   GetMeParams,
   GetMyRedemptionsParams,
   GetReferralsParams,
@@ -40,6 +43,7 @@ import type {
   RedeemRequest,
   Redemption,
   ReferralInfo,
+  RequiredChannel,
   SettingsUpdate,
   SpinRecord,
   SpinRequest,
@@ -1849,6 +1853,457 @@ export const useAdminUpdateSettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminUpdateSettingsMutationOptions(options));
+    }
+
+export const getGetChannelsUrl = () => {
+
+
+
+
+  return `/api/channels`
+}
+
+/**
+ * @summary Get all enabled required channels
+ */
+export const getChannels = async ( options?: RequestInit): Promise<RequiredChannel[]> => {
+
+  return customFetch<RequiredChannel[]>(getGetChannelsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChannelsQueryKey = () => {
+    return [
+    `/api/channels`
+    ] as const;
+    }
+
+
+export const getGetChannelsQueryOptions = <TData = Awaited<ReturnType<typeof getChannels>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChannels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChannelsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChannels>>> = ({ signal }) => getChannels({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChannels>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetChannelsQueryResult = NonNullable<Awaited<ReturnType<typeof getChannels>>>
+export type GetChannelsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all enabled required channels
+ */
+
+export function useGetChannels<TData = Awaited<ReturnType<typeof getChannels>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChannels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetChannelsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCheckChannelMembershipUrl = (params: CheckChannelMembershipParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/channels/check?${stringifiedParams}` : `/api/channels/check`
+}
+
+/**
+ * @summary Check which required channels the user has NOT joined yet
+ */
+export const checkChannelMembership = async (params: CheckChannelMembershipParams, options?: RequestInit): Promise<RequiredChannel[]> => {
+
+  return customFetch<RequiredChannel[]>(getCheckChannelMembershipUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckChannelMembershipQueryKey = (params?: CheckChannelMembershipParams,) => {
+    return [
+    `/api/channels/check`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getCheckChannelMembershipQueryOptions = <TData = Awaited<ReturnType<typeof checkChannelMembership>>, TError = ErrorType<unknown>>(params: CheckChannelMembershipParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkChannelMembership>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCheckChannelMembershipQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkChannelMembership>>> = ({ signal }) => checkChannelMembership(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkChannelMembership>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CheckChannelMembershipQueryResult = NonNullable<Awaited<ReturnType<typeof checkChannelMembership>>>
+export type CheckChannelMembershipQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check which required channels the user has NOT joined yet
+ */
+
+export function useCheckChannelMembership<TData = Awaited<ReturnType<typeof checkChannelMembership>>, TError = ErrorType<unknown>>(
+ params: CheckChannelMembershipParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkChannelMembership>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCheckChannelMembershipQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminGetChannelsUrl = () => {
+
+
+
+
+  return `/api/admin/channels`
+}
+
+/**
+ * @summary Get all required channels (admin)
+ */
+export const adminGetChannels = async ( options?: RequestInit): Promise<RequiredChannel[]> => {
+
+  return customFetch<RequiredChannel[]>(getAdminGetChannelsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetChannelsQueryKey = () => {
+    return [
+    `/api/admin/channels`
+    ] as const;
+    }
+
+
+export const getAdminGetChannelsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetChannels>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetChannels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetChannelsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetChannels>>> = ({ signal }) => adminGetChannels({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetChannels>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetChannelsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetChannels>>>
+export type AdminGetChannelsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all required channels (admin)
+ */
+
+export function useAdminGetChannels<TData = Awaited<ReturnType<typeof adminGetChannels>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetChannels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetChannelsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminAddChannelUrl = () => {
+
+
+
+
+  return `/api/admin/channels`
+}
+
+/**
+ * @summary Add a required channel
+ */
+export const adminAddChannel = async (channelInput: ChannelInput, options?: RequestInit): Promise<RequiredChannel> => {
+
+  return customFetch<RequiredChannel>(getAdminAddChannelUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      channelInput,)
+  }
+);}
+
+
+
+
+export const getAdminAddChannelMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddChannel>>, TError,{data: BodyType<ChannelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAddChannel>>, TError,{data: BodyType<ChannelInput>}, TContext> => {
+
+const mutationKey = ['adminAddChannel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAddChannel>>, {data: BodyType<ChannelInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminAddChannel(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAddChannelMutationResult = NonNullable<Awaited<ReturnType<typeof adminAddChannel>>>
+    export type AdminAddChannelMutationBody = BodyType<ChannelInput>
+    export type AdminAddChannelMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a required channel
+ */
+export const useAdminAddChannel = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddChannel>>, TError,{data: BodyType<ChannelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAddChannel>>,
+        TError,
+        {data: BodyType<ChannelInput>},
+        TContext
+      > => {
+      return useMutation(getAdminAddChannelMutationOptions(options));
+    }
+
+export const getAdminDeleteChannelUrl = (channelId: number,) => {
+
+
+
+
+  return `/api/admin/channels/${channelId}`
+}
+
+/**
+ * @summary Delete a required channel
+ */
+export const adminDeleteChannel = async (channelId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteChannelUrl(channelId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteChannelMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteChannel>>, TError,{channelId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteChannel>>, TError,{channelId: number}, TContext> => {
+
+const mutationKey = ['adminDeleteChannel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteChannel>>, {channelId: number}> = (props) => {
+          const {channelId} = props ?? {};
+
+          return  adminDeleteChannel(channelId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteChannelMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteChannel>>>
+
+    export type AdminDeleteChannelMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a required channel
+ */
+export const useAdminDeleteChannel = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteChannel>>, TError,{channelId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteChannel>>,
+        TError,
+        {channelId: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteChannelMutationOptions(options));
+    }
+
+export const getAdminToggleChannelUrl = (channelId: number,) => {
+
+
+
+
+  return `/api/admin/channels/${channelId}`
+}
+
+/**
+ * @summary Toggle channel enabled/disabled
+ */
+export const adminToggleChannel = async (channelId: number,
+    adminToggleChannelBody: AdminToggleChannelBody, options?: RequestInit): Promise<RequiredChannel> => {
+
+  return customFetch<RequiredChannel>(getAdminToggleChannelUrl(channelId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adminToggleChannelBody,)
+  }
+);}
+
+
+
+
+export const getAdminToggleChannelMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminToggleChannel>>, TError,{channelId: number;data: BodyType<AdminToggleChannelBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminToggleChannel>>, TError,{channelId: number;data: BodyType<AdminToggleChannelBody>}, TContext> => {
+
+const mutationKey = ['adminToggleChannel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminToggleChannel>>, {channelId: number;data: BodyType<AdminToggleChannelBody>}> = (props) => {
+          const {channelId,data} = props ?? {};
+
+          return  adminToggleChannel(channelId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminToggleChannelMutationResult = NonNullable<Awaited<ReturnType<typeof adminToggleChannel>>>
+    export type AdminToggleChannelMutationBody = BodyType<AdminToggleChannelBody>
+    export type AdminToggleChannelMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Toggle channel enabled/disabled
+ */
+export const useAdminToggleChannel = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminToggleChannel>>, TError,{channelId: number;data: BodyType<AdminToggleChannelBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminToggleChannel>>,
+        TError,
+        {channelId: number;data: BodyType<AdminToggleChannelBody>},
+        TContext
+      > => {
+      return useMutation(getAdminToggleChannelMutationOptions(options));
     }
 
 export const getAdminGetLogsUrl = (params?: AdminGetLogsParams,) => {
