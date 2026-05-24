@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>التحقق من الجهاز</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+<style>
+:root { --bg:#0f1115; --card:#181c22; --accent:#5b8bff; --accent-grad:linear-gradient(135deg,#5b8bff,#936bff 55%,#ff7ac6); --text:#e7ecf2; --danger:#ff4d61; --success:#35c06e; --border:1px solid #252b33; font-family:'Segoe UI',Tahoma,Arial,sans-serif; }
+body {background:radial-gradient(circle at 20% 20%, #1e2530, #0d0f13);margin:0;padding:0;color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.container {width:min(480px,92%);background:var(--card);padding:32px 30px 40px;border-radius:24px;box-shadow:0 8px 28px -6px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04);position:relative;overflow:hidden;}
+.container:before {content:"";position:absolute;inset:0;background:conic-gradient(from 180deg at 50% 50%,rgba(255,255,255,.06),transparent 35% 70%,rgba(255,255,255,.06));mix-blend-mode:overlay;pointer-events:none;}
+header {text-align:center;margin-bottom:26px;}
+header h1 {margin:0;font-size:1.55rem;letter-spacing:.5px;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:600;}
+header p {margin:10px 0 0;font-size:.9rem;opacity:.85;line-height:1.4;}
+.animation-box {display:flex;justify-content:center;align-items:center;min-height:200px;margin:20px 0;}
+.animation-box lottie-player {width:200px;height:200px;}
+.status-icon {width:80px;height:80px;margin:20px auto;display:none;}
+.status-icon.show {display:block;}
+.status {margin-top:14px;font-size:1rem;font-weight:600;text-align:center;padding:12px;border-radius:12px;}
+.status.ok {color:var(--success);background:rgba(53,192,110,.1);} 
+.status.err {color:var(--danger);background:rgba(255,77,97,.1);} 
+.status.pending {color:#ffc861;background:rgba(255,200,97,.1);}
+footer {margin-top:30px;text-align:center;font-size:.7rem;opacity:.55;}
+.glow {position:absolute;inset:0;pointer-events:none;}
+.glow:before, .glow:after {content:"";position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;animation:float 8s ease-in-out infinite;}
+.glow:before {width:320px;height:320px;background:#5b8bff;top:-120px;left:-120px;animation-delay:-2s;}
+.glow:after {width:260px;height:260px;background:#ff7ac6;bottom:-100px;right:-90px;}
+@keyframes float {0%,100% {transform:translateY(0);}50% {transform:translateY(40px);}}
+.hidden {display:none!important;}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="glow"></div>
+    <header>
+      <h1>🔐 التحقق من الجهاز</h1>
+      <p>جارٍ التحقق من جهازك لضمان نزاهة النظام...</p>
+    </header>
+    
+    <div class="animation-box">
+      <lottie-player id="animationPlayer" src="/img/preloaderSticker.json" background="transparent" speed="1" loop autoplay></lottie-player>
+    </div>
+    
+    <img id="statusIcon" class="status-icon" src="" alt="">
+    
+    <div id="status" class="status pending">🔍 جارٍ فحص الجهاز...</div>
+    
+    <footer>جميع البيانات تُستخدم لحماية المستخدمين من التلاعب.</footer>
+  </div>
+<script>
+// إعدادات الـ API
+const API_CONFIG = {
+  BASE_URL: 'https://arabton.onrender.com',
+  getApiUrl: function() {
+    // استخدم دائماً الـ full URL للتواصل مع السيرفر
+    return this.BASE_URL;
+  }
+};
+
+console.log('🌐 Frontend URL:', window.location.href);
+console.log('🔗 API Server URL:', API_CONFIG.BASE_URL);
+
+(function initTelegram(){
+  if(window.Telegram && Telegram.WebApp){
+    try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch(e) {}
+  }
+})();
+
+function getUserIdFromUrl(){
+  try {
+    const params = new URLSearchParams(location.search);
+    const userId = params.get('user_id');
+    if(userId && /^\d+$/.test(userId)) return parseInt(userId);
+    
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const hashUserId = hashParams.get('user_id');
+    if(hashUserId && /^\d+$/.test(hashUserId)) return parseInt(hashUserId);
+  } catch(e) {
+    console.error('Error extracting user_id:', e);
+  }
+  return null;
+}
+
+function getReferrerIdFromUrl(){
+  try {
+    // محاولة من start_param في initDataUnsafe
+    const initData = window.Telegram?.WebApp?.initDataUnsafe;
+    if(initData?.start_param) {
+      const startParam = initData.start_param;
+      if(startParam.startsWith('ref_')) {
+        return parseInt(startParam.replace('ref_', ''));
+      }
+    }
+    
+    // محاولة من URL parameters
+    const params = new URLSearchParams(location.search);
+    const refParam = params.get('referrer_id') || params.get('ref');
+    if(refParam && /^\d+$/.test(refParam)) return parseInt(refParam);
+  } catch(e) {
+    console.error('Error extracting referrer_id:', e);
+  }
+  return null;
+}
+
+(async function(){
+  const animationPlayer = document.getElementById('animationPlayer');
+  const statusIcon = document.getElementById('statusIcon');
+  const status = document.getElementById('status');
+  const outsideHint = document.getElementById('outsideHint');
+
+  
+  function localId(){
+    const k='__fp_local_id';
+    let id=localStorage.getItem(k);
+    if(!id){ id=crypto.randomUUID(); localStorage.setItem(k,id);} return id;
+  }
+
+  async function canvasFP(){
+    try { const c=document.createElement('canvas'); c.width=220; c.height=40; const ctx=c.getContext('2d'); ctx.textBaseline='top'; ctx.font='16px Arial'; ctx.fillText('Fingerprint Canvas Test',4,4); const data=c.toDataURL(); return await digest(data);} catch(e){return 'NA'} }
+  async function audioFP(){
+    try { const ctx=new (window.AudioContext||window.webkitAudioContext)(); const osc=ctx.createOscillator(); const analyser=ctx.createAnalyser(); osc.type='triangle'; osc.frequency.value=111; osc.connect(analyser); osc.start(); const arr=new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(arr); osc.stop(); ctx.close(); return await digest(arr.join(',')); } catch(e){return 'NA'} }
+  async function digest(str){ const buf=new TextEncoder().encode(str); const h=await crypto.subtle.digest('SHA-256',buf); return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32); }
+
+  async function build(){
+    console.log('🔍 Starting fingerprint build...');
+    const ua=navigator.userAgent; 
+    const rez=screen.width+'x'+screen.height; 
+    const tz=Intl.DateTimeFormat().resolvedOptions().timeZone || 'NA'; 
+    const lid=localId(); 
+    const cfp=await canvasFP(); 
+    const afp=await audioFP();
+    const raw = ua+'|'+rez+'|'+tz+'|'+lid+'|'+cfp+'|'+afp; 
+    const final = await digest(raw);
+    console.log('✅ Fingerprint generated:', final.substring(0, 16) + '...');
+    
+    // الحصول على IP address (بدون عرضه)
+    let userIP = 'Unknown';
+    try {
+      const ipResp = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResp.json();
+      userIP = ipData.ip || 'Unknown';
+      console.log('📍 IP Address detected');
+    } catch(e) {
+      console.error('Failed to get IP:', e);
+    }
+    
+    status.textContent='📡 جارٍ إرسال البيانات...';
+    status.className='status pending';
+    
+    async function doSend(){
+      const uid = getUserIdFromUrl();
+      // 🔐 جلب fp_token من السيرفر بشكل آمن (بدلاً من URL)
+      let fpToken = null;
+      
+      try {
+        status.textContent='🔐 جارٍ التحقق من الهوية...';
+        
+        // الحصول على Telegram init data
+        const initData = window.Telegram?.WebApp?.initData;
+        if (!initData) {
+          throw new Error('يجب فتح الصفحة من Telegram');
+        }
+        
+        // طلب التوكن من السيرفر بشكل آمن
+        const tokenApiUrl = `${API_CONFIG.getApiUrl()}/api/verification/get-token`;
+        const tokenResp = await fetch(tokenApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Telegram-Init-Data': initData
+          }
+        });
+        
+        if (!tokenResp.ok) {
+          const errorData = await tokenResp.json();
+          throw new Error(errorData.error || 'فشل الحصول على توكن التحقق');
+        }
+        
+        const tokenData = await tokenResp.json();
+        fpToken = tokenData.token;
+        console.log('✅ Token fetched securely from server');
+        
+      } catch (error) {
+        console.error('❌ Error fetching token:', error);
+        animationPlayer.load('/img/notallowed.json');
+        animationPlayer.play();
+        statusIcon.src = '/img/payment-failure.svg';
+        statusIcon.classList.add('show');
+        status.textContent = `❌ ${error.message}`;
+        status.className = 'status err';
+        return;
+      }
+      
+      const referrerId = getReferrerIdFromUrl();
+      
+      // إنشاء fallback link
+      let fallbackLink = 'https://t.me/Arab_ton_bot';
+      if(referrerId) {
+        fallbackLink = `https://t.me/Arab_ton_bot?start=ref_${referrerId}`;
+        console.log('📎 Referrer found:', referrerId, 'Fallback link:', fallbackLink);
+      }
+      
+      const payload = { 
+        fingerprint: final, 
+        meta:{ ua, rez, tz, lid, cfp, afp, ip: userIP }, 
+        user_id: uid, 
+        fp_token: fpToken,
+        referrer_id: referrerId,
+        fallback_link: fallbackLink
+      };
+      
+      let success = false;
+      
+      // استخدام API المباشر
+      if(uid && fpToken){
+        try {
+          status.textContent='📡 جارٍ التحقق من الجهاز...';
+          status.className='status pending';
+          
+          // بناء الـ URL الكامل للـ API
+          const apiUrl = `${API_CONFIG.getApiUrl()}/api/fingerprint`;
+          console.log('🔗 Sending request to:', apiUrl);
+          console.log('📦 Payload (without sensitive data):', {
+            user_id: uid,
+            has_token: !!fpToken,
+            fingerprint: final?.substring(0, 16) + '...'
+          });
+          
+          const resp = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+          
+          console.log('📨 Response status:', resp.status, resp.statusText);
+          
+          if(resp.ok){
+            const result = await resp.json();
+            if(result.ok){
+              // نجح التحقق - عرض allowed animation
+              animationPlayer.load('/img/allowed.json');
+              animationPlayer.play();
+              
+              // عرض أيقونة النجاح
+              statusIcon.src = '/img/payment-success.svg';
+              statusIcon.classList.add('show');
+              
+              status.textContent='✅ تم التحقق من جهازك بنجاح!';
+              status.className='status ok';
+              success = true;
+              
+              // إغلاق النافذة تلقائياً بعد 3 ثوان
+              setTimeout(() => {
+                if(window.Telegram?.WebApp) {
+                  Telegram.WebApp.close();
+                } else {
+                  window.close();
+                }
+              }, 3000);
+            } else {
+              // فشل التحقق - عرض notallowed animation
+              animationPlayer.load('/img/notallowed.json');
+              animationPlayer.play();
+              
+              // عرض أيقونة الفشل
+              statusIcon.src = '/img/payment-failure.svg';
+              statusIcon.classList.add('show');
+              
+              const errorReason = result.error || 'خطأ غير معروف';
+              status.textContent=`❌ ${errorReason}`;
+              status.className='status err';
+            }
+          } else {
+            // معالجة الأخطاء من الخادم (403, 400, etc)
+            console.error('❌ Server error:', resp.status, resp.statusText);
+            let errorMessage = 'خطأ في الاتصال بالخادم';
+            try {
+              const errorData = await resp.json();
+              console.error('📋 Error details:', errorData);
+              errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch(e) {
+              errorMessage = `خطأ ${resp.status}: ${resp.statusText}`;
+            }
+            
+            // عرض notallowed animation
+            animationPlayer.load('/img/notallowed.json');
+            animationPlayer.play();
+            
+            // عرض أيقونة الفشل
+            statusIcon.src = '/img/payment-failure.svg';
+            statusIcon.classList.add('show');
+            
+            if(resp.status === 403) {
+              status.textContent='🚫 جهاز مسجل مسبقاً - هذا الجهاز مستخدم بالفعل';
+            } else {
+              status.textContent=`❌ ${errorMessage}`;
+            }
+            status.className='status err';
+          }
+        } catch(err){ 
+          console.error('💥 Network/Fetch error:', err);
+          console.error('Error details:', {
+            name: err.name,
+            message: err.message,
+            stack: err.stack
+          });
+          
+          // عرض notallowed animation
+          animationPlayer.load('/img/notallowed.json');
+          animationPlayer.play();
+          
+          // عرض أيقونة الفشل
+          statusIcon.src = '/img/payment-failure.svg';
+          statusIcon.classList.add('show');
+          
+          status.textContent='❌ فشل الاتصال بالخادم';
+          status.className='status err';
+        }
+      }
+      
+      if(!success && !uid){
+        status.textContent='⚠️ افتح الصفحة من زر داخل تيليجرام'; 
+        status.className='status err';
+        
+        // عرض notallowed animation
+        animationPlayer.load('/img/notallowed.json');
+        animationPlayer.play();
+        
+        statusIcon.src = '/img/payment-failure.svg';
+        statusIcon.classList.add('show');
+      }
+      
+      return success;
+    }
+    
+    // بدء التحقق تلقائياً بعد تحميل البيانات
+    await doSend();
+  }
+
+  try { 
+    const fp = await import('https://openfpcdn.io/fingerprintjs/v3').then(x=>x.load()); 
+    const result = await fp.get(); 
+    console.log('FPJS ID:', result.visitorId);
+  } catch(e) { 
+    console.log('FPJS not available'); 
+  }
+  
+  await build();
+  
+  if(window.Telegram && Telegram.WebApp){ 
+    const theme = Telegram.WebApp.themeParams || {}; 
+    const root=document.documentElement; 
+    if(theme.bg_color) root.style.setProperty('--bg', theme.bg_color); 
+    if(theme.secondary_bg_color) root.style.setProperty('--card', theme.secondary_bg_color); 
+    if(theme.text_color) root.style.setProperty('--text', theme.text_color); 
+  }
+})();
+</script>
+</body>
+</html>

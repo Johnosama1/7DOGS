@@ -6,6 +6,7 @@ import { UserProvider } from "@/context/user-context";
 import { LanguageProvider } from "@/context/language-context";
 import { AppLayout } from "@/components/layout/app-layout";
 import { ChannelGate } from "@/components/channel-gate";
+import { WelcomeScreen } from "@/components/welcome-screen";
 
 import NotFound from "@/pages/not-found";
 import WheelPage from "@/pages/wheel";
@@ -19,19 +20,21 @@ const queryClient = new QueryClient();
 
 function Router() {
   return (
-    <ChannelGate>
-      <AppLayout>
-        <Switch>
-          <Route path="/" component={WheelPage} />
-          <Route path="/referrals" component={ReferralsPage} />
-          <Route path="/gifts" component={GiftsPage} />
-          <Route path="/account" component={AccountPage} />
-          <Route path="/my-gifts" component={MyGiftsPage} />
-          <Route path="/admin" component={AdminPage} />
-          <Route component={NotFound} />
-        </Switch>
-      </AppLayout>
-    </ChannelGate>
+    <WelcomeScreen>
+      <ChannelGate>
+        <AppLayout>
+          <Switch>
+            <Route path="/" component={WheelPage} />
+            <Route path="/referrals" component={ReferralsPage} />
+            <Route path="/gifts" component={GiftsPage} />
+            <Route path="/account" component={AccountPage} />
+            <Route path="/my-gifts" component={MyGiftsPage} />
+            <Route path="/admin" component={AdminPage} />
+            <Route component={NotFound} />
+          </Switch>
+        </AppLayout>
+      </ChannelGate>
+    </WelcomeScreen>
   );
 }
 
