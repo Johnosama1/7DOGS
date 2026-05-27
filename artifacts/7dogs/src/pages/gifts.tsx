@@ -7,7 +7,7 @@ import { Gift as GiftIcon, Coins } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Gift } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { Gift } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function GiftsPage() {

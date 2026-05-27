@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { User } from "@workspace/api-client-react";
 import { useGetMe } from "@workspace/api-client-react";
 
 interface UserContextType {
@@ -27,7 +27,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const { data: user, isLoading } = useGetMe(
     { telegramId, firstName, username },
-    { query: { enabled: !!telegramId } }
+    { query: { enabled: !!telegramId } as never }
   );
 
   return (

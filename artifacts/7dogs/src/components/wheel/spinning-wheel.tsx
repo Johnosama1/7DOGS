@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { WheelSegment } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { WheelSegment } from "@workspace/api-client-react";
 import botLogo from "/7dogs-logo.jpeg";
 
 interface SpinningWheelProps {
@@ -13,23 +13,24 @@ export function SpinningWheel({ segments, isSpinning, landingSegmentId, onSpinEn
   const [rotation, setRotation] = useState(0);
 
   useEffect(() => {
-    if (isSpinning && landingSegmentId !== undefined && segments.length > 0) {
-      const segmentIndex = segments.findIndex(s => s.id === landingSegmentId);
-      if (segmentIndex === -1) return;
+    if (!isSpinning || landingSegmentId === undefined || segments.length === 0) return;
 
-      const segmentAngle = 360 / segments.length;
-      const targetAngle = 360 - (segmentIndex * segmentAngle) - (segmentAngle / 2);
-      const extraSpins = 360 * 6;
-      const newRotation = rotation + extraSpins + (targetAngle - (rotation % 360));
+    const segmentIndex = segments.findIndex(s => s.id === landingSegmentId);
+    if (segmentIndex === -1) return;
 
-      setRotation(newRotation);
+    const segmentAngle = 360 / segments.length;
+    const targetAngle = 360 - (segmentIndex * segmentAngle) - (segmentAngle / 2);
+    const extraSpins = 360 * 6;
+    const newRotation = rotation + extraSpins + (targetAngle - (rotation % 360));
 
-      const timeout = setTimeout(() => {
-        onSpinEnd();
-      }, 5500);
+    setRotation(newRotation);
 
-      return () => clearTimeout(timeout);
-    }
+    const timeout = setTimeout(() => {
+      onSpinEnd();
+    }, 5500);
+
+    return () => clearTimeout(timeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSpinning, landingSegmentId, segments]);
 
   if (!segments || segments.length === 0) {

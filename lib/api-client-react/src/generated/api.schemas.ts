@@ -288,6 +288,31 @@ export interface ChannelInput {
   enabled?: boolean;
 }
 
+export type BroadcastInputParseMode = typeof BroadcastInputParseMode[keyof typeof BroadcastInputParseMode];
+
+
+export const BroadcastInputParseMode = {
+  HTML: 'HTML',
+  Markdown: 'Markdown',
+} as const;
+
+export interface BroadcastInput {
+  /** Message text (supports Telegram HTML) */
+  text: string;
+  parseMode?: BroadcastInputParseMode;
+  /**
+     * Optional photo URL to attach
+     * @nullable
+     */
+  photoUrl?: string | null;
+}
+
+export interface BroadcastResult {
+  total: number;
+  sent: number;
+  failed: number;
+}
+
 export type GetMeParams = {
 telegramId: string;
 firstName?: string;

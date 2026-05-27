@@ -1,0 +1,266 @@
+Create a complete advanced Admin Control System for my Telegram bot with full dynamic management and production-ready architecture.
+
+==================================================
+OWNER ACCESS
+============
+
+Create a hidden admin panel that ONLY appears for the bot owner:
+@J_O_H_N8
+
+No normal user should ever see the admin button or access admin features.
+
+When the owner opens the admin panel:
+
+* Ask for an admin password first
+* The password must be stored securely inside Replit Secrets
+* Automatically open the Secrets page and create:
+  ADMIN_PASSWORD=your_password_here
+
+If password is wrong:
+
+* deny access
+* show unauthorized message
+
+==================================================
+ADMIN PANEL FEATURES
+====================
+
+Inside the Admin page create a luxury modern UI with buttons and categories.
+
+The admin must be able to control EVERYTHING dynamically without editing code.
+
+==================================================
+
+1. FEATURE TOGGLE SYSTEM
+   ==================================================
+
+Create a system to:
+
+* Enable or disable any section in the bot
+* If disabled:
+
+  * users see "🚧 Under Maintenance" or "Soon"
+* Admin can toggle ON/OFF:
+
+  * Spin wheel
+  * Gifts
+  * Referrals
+  * Daily rewards
+  * Tasks
+  * Withdraw
+  * Channels page
+  * Any future page
+
+All toggles must save permanently in database/storage.
+
+==================================================
+2. SPIN WHEEL CONTROL
+=====================
+
+Inside admin panel create:
+
+* Change wheel language
+* Change wheel prizes
+* Change probability percentages
+* Add or remove rewards
+* Edit wheel colors/icons/text
+* Save changes instantly
+
+==================================================
+3. GLOBAL BROADCAST SYSTEM
+==========================
+
+Create a broadcast system where admin can:
+
+* Write one message
+* Send it to ALL bot users at once
+
+Requirements:
+
+* Supports text
+* Supports photo with caption
+* Supports buttons
+* Show:
+
+  * total users
+  * sent success count
+  * failed count
+* Use safe rate limiting to avoid Telegram flood
+
+==================================================
+4. REQUIRED CHANNELS SYSTEM
+===========================
+
+Create a smart forced-subscription system.
+
+Admin can:
+
+* Add channels
+* Remove channels
+* Edit channel usernames/links
+
+When a user opens the bot:
+
+* Check all required channels
+* ONLY show channels the user is NOT subscribed to
+* Example:
+
+  * Admin added 10 channels
+  * User already joined 3
+  * Bot only shows remaining 7 channels
+
+Add:
+
+* Verify button
+* Recheck system
+* Auto refresh after joining
+
+==================================================
+5. DYNAMIC PAGE SYSTEM
+======================
+
+Create a system where admin can:
+
+* Add new pages/features inside the bot
+* Enable or disable them anytime
+* Control visibility from admin panel
+
+Architecture must support future expansion easily.
+
+==================================================
+6. GIFTS MANAGEMENT
+===================
+
+Create a complete gifts management system.
+
+Admin can:
+
+* Add gifts
+* Upload gift image/icon
+* Set required coins
+* Edit gifts
+* Delete gifts
+* Enable/disable gifts
+
+Users can redeem gifts using coins.
+
+==================================================
+7. WELCOME MESSAGE SYSTEM
+=========================
+
+When user starts the bot:
+
+* Show animated welcome message
+* Show Play button
+
+Inside admin panel:
+
+* Admin can edit welcome message anytime
+* Change buttons
+* Change media
+* Enable/disable animations
+
+==================================================
+8. REFERRAL SYSTEM CONTROL
+==========================
+
+Inside admin panel:
+
+* Change required referrals dynamically
+* Example:
+
+  * today = 5
+  * tomorrow = 2
+  * instantly updates
+
+==================================================
+9. DATABASE & STORAGE
+=====================
+
+Use a proper persistent database.
+
+Requirements:
+
+* Store users
+* Store referrals
+* Store admin settings
+* Store gifts
+* Store channels
+* Store feature toggles
+* Store wheel settings
+* Store broadcasts
+
+Use scalable production-ready structure.
+
+==================================================
+10. SERVER & DEPLOYMENT
+=======================
+
+Modify project files to fully support:
+
+* Vercel deployment
+* Persistent backend
+* Webhook mode
+* Production environment
+
+Automatically:
+
+* Fix server files
+* Fix API routes
+* Fix webhook routes
+* Ensure bot works 24/7 on Vercel
+
+==================================================
+11. REPLIT AUTOMATION
+=====================
+
+Automatically:
+
+* Edit required files
+* Create missing files
+* Install dependencies
+* Configure environment
+* Configure Secrets
+* Fix broken imports
+* Start the bot correctly
+
+==================================================
+12. UI/UX
+=========
+
+Create:
+
+* Premium modern admin dashboard
+* Smooth animations
+* Clean Telegram-style interface
+* Fast navigation
+* Responsive layouts
+* Organized sections
+
+==================================================
+13. SECURITY
+============
+
+Add:
+
+* Owner-only protection
+* Password protection
+* Middleware protection
+* Anti unauthorized access
+* Environment variable validation
+
+==================================================
+14. FINAL REQUIREMENTS
+======================
+
+After everything:
+
+* Ensure bot runs without errors
+* Ensure admin panel works completely
+* Ensure all admin changes apply instantly
+* Ensure code is clean and modular
+* Ensure scalable architecture
+* Ensure production-ready setup
+
+Do NOT give placeholders only.
+Actually implement and modify the project files automatically.

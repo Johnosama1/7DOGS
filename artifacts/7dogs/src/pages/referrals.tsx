@@ -11,7 +11,7 @@ export default function ReferralsPage() {
   const { t } = useLang();
   const { data: referrals } = useGetReferrals(
     { userId: user?.id || 0 },
-    { query: { enabled: !!user?.id } }
+    { query: { enabled: !!user?.id } as never }
   );
   const { toast } = useToast();
 

@@ -612,3 +612,25 @@ export const AdminGetLogsResponseItem = zod.object({
 export const AdminGetLogsResponse = zod.array(AdminGetLogsResponseItem)
 
 
+/**
+ * @summary Send a broadcast message to all users via Telegram
+ */
+export const AdminBroadcastHeader = zod.object({
+  "x-admin-token": zod.string()
+})
+
+export const adminBroadcastBodyParseModeDefault = `HTML`;
+
+export const AdminBroadcastBody = zod.object({
+  "text": zod.string().describe('Message text (supports Telegram HTML)'),
+  "parseMode": zod.enum(['HTML', 'Markdown']).default(adminBroadcastBodyParseModeDefault),
+  "photoUrl": zod.string().nullish().describe('Optional photo URL to attach')
+})
+
+export const AdminBroadcastResponse = zod.object({
+  "total": zod.number(),
+  "sent": zod.number(),
+  "failed": zod.number()
+})
+
+

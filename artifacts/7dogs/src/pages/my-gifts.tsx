@@ -7,7 +7,7 @@ export default function MyGiftsPage() {
   const { user } = useUser();
   const { data: redemptions, isLoading } = useGetMyRedemptions(
     { userId: user?.id || 0 },
-    { query: { enabled: !!user?.id } }
+    { query: { enabled: !!user?.id } as never }
   );
 
   return (

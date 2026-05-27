@@ -457,6 +457,74 @@ router.patch("/settings", async (req, res) => {
   });
 });
 
+// POST /api/admin/broadcast
+router.post("/broadcast", async (req, res) => {
+  if (!validateToken(req, res)) return;
+
+  const { text, parseMode = "HTML", photoUrl } = req.body as {
+    text?: string;
+    parseMode?: string;
+    photoUrl?: string | null;
+  };
+
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    res.status(400).json({ error: "text is required" });
+    return;
+  }
+
+  const botToken = process.env.BOT_TOKEN;
+  if (!botToken) {
+    res.status(503).json({ error: "BOT_TOKEN not configured" });
+    return;
+  }
+
+  // Fetch all users with a telegram ID
+  const users = await db.select({ telegramId: usersTable.telegramId }).from(usersTable);
+
+  const total = users.length;
+  let sent = 0;
+  let failed = 0;
+
+  const DELAY_MS = 50; // safe rate: ~20 msg/s (Telegram limit is 30/s)
+
+  for (const user of users) {
+    try {
+      const telegramId = user.telegramId;
+      let url: string;
+      let body: Record<string, unknown>;
+
+      if (photoUrl) {
+        url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
+        body = { chat_id: telegramId, photo: photoUrl, caption: text, parse_mode: parseMode };
+      } else {
+        url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        body = { chat_id: telegramId, text, parse_mode: parseMode };
+      }
+
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (resp.ok) {
+        sent++;
+      } else {
+        failed++;
+      }
+    } catch {
+      failed++;
+    }
+
+    // Rate-limit: small delay between messages
+    await new Promise((r) => setTimeout(r, DELAY_MS));
+  }
+
+  await logAdminAction("broadcast", `Sent to ${sent}/${total} users`);
+
+  res.json({ total, sent, failed });
+});
+
 // GET /api/admin/logs
 router.get("/logs", async (req, res) => {
   if (!validateToken(req, res)) return;

@@ -723,6 +723,31 @@ paths:
                 items:
                   $ref: "#/components/schemas/AdminLog"
 
+  /admin/broadcast:
+    post:
+      operationId: adminBroadcast
+      tags: [admin]
+      summary: Send a broadcast message to all users via Telegram
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BroadcastInput"
+      responses:
+        "200":
+          description: Broadcast result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BroadcastResult"
+
 components:
   schemas:
     HealthStatus:
@@ -1128,3 +1153,29 @@ components:
         enabled:
           type: boolean
           default: true
+
+    BroadcastInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: Message text (supports Telegram HTML)
+        parseMode:
+          type: string
+          enum: [HTML, Markdown]
+          default: HTML
+        photoUrl:
+          type: ["string", "null"]
+          description: Optional photo URL to attach
+
+    BroadcastResult:
+      type: object
+      required: [total, sent, failed]
+      properties:
+        total:
+          type: integer
+        sent:
+          type: integer
+        failed:
+          type: integer

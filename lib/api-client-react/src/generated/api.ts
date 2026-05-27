@@ -29,6 +29,8 @@ import type {
   AdminVerifyInput,
   AppSettings,
   BalanceAdjustment,
+  BroadcastInput,
+  BroadcastResult,
   ChannelInput,
   CheckChannelMembershipParams,
   GetMeParams,
@@ -2389,4 +2391,75 @@ export function useAdminGetLogs<TData = Awaited<ReturnType<typeof adminGetLogs>>
 
 
 
+
+export const getAdminBroadcastUrl = () => {
+
+
+
+
+  return `/api/admin/broadcast`
+}
+
+/**
+ * @summary Send a broadcast message to all users via Telegram
+ */
+export const adminBroadcast = async (broadcastInput: BroadcastInput, options?: RequestInit): Promise<BroadcastResult> => {
+
+  return customFetch<BroadcastResult>(getAdminBroadcastUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      broadcastInput,)
+  }
+);}
+
+
+
+
+export const getAdminBroadcastMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBroadcast>>, TError,{data: BodyType<BroadcastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminBroadcast>>, TError,{data: BodyType<BroadcastInput>}, TContext> => {
+
+const mutationKey = ['adminBroadcast'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminBroadcast>>, {data: BodyType<BroadcastInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminBroadcast(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminBroadcastMutationResult = NonNullable<Awaited<ReturnType<typeof adminBroadcast>>>
+    export type AdminBroadcastMutationBody = BodyType<BroadcastInput>
+    export type AdminBroadcastMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a broadcast message to all users via Telegram
+ */
+export const useAdminBroadcast = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBroadcast>>, TError,{data: BodyType<BroadcastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminBroadcast>>,
+        TError,
+        {data: BodyType<BroadcastInput>},
+        TContext
+      > => {
+      return useMutation(getAdminBroadcastMutationOptions(options));
+    }
 
