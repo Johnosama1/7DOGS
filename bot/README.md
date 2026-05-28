@@ -1,179 +1,98 @@
-# 7DOGS Lucky Wheel Bot
+# 7DOGS Bot — Vercel Serverless
 
-Telegram bot for the 7DOGS lucky wheel game. Users spin to win coins and prizes.
+Telegram bot for the 7DOGS lucky wheel app.  
+Runs as Vercel serverless functions — no server, no polling, no keep-alive.
 
----
+## Project structure
 
-## Features
-
-| Command | Description |
-|---|---|
-| `/start` | Register + welcome message |
-| `/balance` | Show coin balance |
-| `/spin` | Spend 10 coins, spin the wheel |
-| `/prizes` | List all prizes and probabilities |
-| `/withdraw [prize]` | Request a prize withdrawal |
-| `/addcoins [id] [amount]` | *(Admin)* Add coins to a user |
-| `/pending` | *(Admin)* List pending withdrawals |
-
----
-
-## VPS Setup
-
-### 1. Server requirements
-
-- Ubuntu 20.04+ (or any Linux)
-- Node.js 18+
-- A domain with HTTPS (Nginx + Certbot recommended)
-
-### 2. Install Node.js 18
-
-```bash
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
+```
+bot/
+├── api/
+│   ├── webhook.js   ← receives all Telegram updates
+│   └── setup.js     ← registers webhook with Telegram (run once)
+├── migrations/
+│   └── 001_init.sql ← run once on your Postgres database
+├── vercel.json
+├── package.json
+└── .env.example
 ```
 
-### 3. Clone / upload the bot
+## Deploy to Vercel
 
-```bash
-# Upload the bot/ folder to your server, then:
-cd /opt/7dogs-bot
-npm install
+### 1. Import on Vercel
+
+Go to https://vercel.com → New Project → import your GitHub repo.  
+If the `bot/` folder is inside a bigger repo, set **Root Directory** to `bot` in the Vercel project settings.
+
+### 2. Set environment variables on Vercel dashboard
+
+```
+BOT_TOKEN=<your telegram bot token from @BotFather>
+DATABASE_URL=<your Neon / Postgres connection string>
+ADMIN_ID=<your Telegram user ID — number only>
 ```
 
-### 4. Create the database
-
-Run the migration on your PostgreSQL database (Neon, Supabase, Railway, etc.):
+### 3. Run the database migration (once)
 
 ```bash
 psql "$DATABASE_URL" -f migrations/001_init.sql
 ```
 
-Or paste the contents of `migrations/001_init.sql` into the Neon/Supabase SQL editor.
+Or paste the contents of `migrations/001_init.sql` into the Neon / Supabase SQL editor.
 
-### 5. Configure environment
+### 4. Register the webhook (once after deploy)
 
-```bash
-cp .env.example .env
-nano .env
+Open this URL in your browser **once** after Vercel finishes deploying:
+
+```
+https://YOUR-PROJECT.vercel.app/api/setup
 ```
 
-Fill in:
+Expected response:
 
-```env
-BOT_TOKEN=your_bot_token
-DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
-WEBHOOK_URL=https://yourdomain.com
-PORT=3000
-ADMIN_ID=your_telegram_id
-```
-
-### 6. Configure Nginx reverse proxy
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name yourdomain.com;
-
-    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
+```json
+{
+  "ok": true,
+  "webhook_set_to": "https://YOUR-PROJECT.vercel.app/api/webhook",
+  "telegram_confirmed": "https://YOUR-PROJECT.vercel.app/api/webhook"
 }
 ```
 
-### 7. Get SSL certificate
-
-```bash
-sudo apt install certbot python3-certbot-nginx -y
-sudo certbot --nginx -d yourdomain.com
-```
-
-### 8. Start the bot
-
-```bash
-npm start
-```
-
-### 9. Run as a service (keep alive after reboot)
-
-```bash
-sudo nano /etc/systemd/system/7dogs-bot.service
-```
-
-Paste:
-
-```ini
-[Unit]
-Description=7DOGS Telegram Bot
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/7dogs-bot
-ExecStart=/usr/bin/node src/bot.js
-Restart=on-failure
-RestartSec=5
-EnvironmentFile=/opt/7dogs-bot/.env
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable 7dogs-bot
-sudo systemctl start 7dogs-bot
-sudo systemctl status 7dogs-bot
-```
-
-### Check logs
-
-```bash
-sudo journalctl -u 7dogs-bot -f
-```
+That's it — the bot is live.
 
 ---
 
-## Database schema
+## Bot commands
 
-See `migrations/001_init.sql` — creates these tables:
+| Command | Who | Description |
+|---------|-----|-------------|
+| `/start` | Everyone | Register + welcome message |
+| `/balance` | Everyone | Show coin balance |
+| `/spin` | Everyone | Spin the wheel (costs 10 coins) |
+| `/prizes` | Everyone | List all prizes and odds |
+| `/withdraw [prize]` | Everyone | Request a withdrawal |
+| `/addcoins [id] [amount]` | Admin only | Add coins to a user |
+| `/pending` | Admin only | List pending withdrawal requests |
 
-- **users** — telegram_id, username, coins balance
-- **prizes** — name, value, probability weights
-- **spins** — history of every spin
-- **withdrawals** — withdrawal requests with status
+## Prize pool (default)
 
----
+| Prize | Coins | Chance |
+|-------|-------|--------|
+| 💎 Diamond Jackpot | 500 | 1% |
+| 🥇 Gold Prize | 200 | 4% |
+| 🥈 Silver Prize | 100 | 10% |
+| 🎁 Bonus Coins | 50 | 20% |
+| 🎀 Small Reward | 20 | 30% |
+| 🔄 Try Again | 0 | 35% |
 
 ## Customising prizes
 
-Edit the prizes directly in the database:
+Edit directly in the database:
 
 ```sql
--- Update a prize probability
-UPDATE prizes SET probability = 0.05 WHERE name LIKE '%Gold%';
+UPDATE bot_prizes SET probability = 0.05 WHERE name LIKE '%Gold%';
 
--- Add a new prize
-INSERT INTO prizes (name, value, probability) VALUES ('🚀 Mega Jackpot', 1000, 0.005);
+INSERT INTO bot_prizes (name, value, probability) VALUES ('🚀 Mega Jackpot', 1000, 0.005);
 ```
 
 > ⚠️ Keep the sum of all `probability` values equal to **1.0**
-
----
-
-## Development (run locally without a domain)
-
-Use [ngrok](https://ngrok.com) to create a temporary HTTPS tunnel:
-
-```bash
-npm install -g ngrok
-ngrok http 3000
-# Copy the https:// URL into WEBHOOK_URL in your .env
-npm start
-```
