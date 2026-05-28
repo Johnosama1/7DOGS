@@ -1,9 +1,9 @@
+import { useState } from "react";
 import { useUser } from "@/context/user-context";
 import { useLang } from "@/context/language-context";
 import { useGetReferrals } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Copy, Users, Link as LinkIcon, Gift } from "lucide-react";
+import { Copy, Check, Users, Link as LinkIcon, Gift } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 export default function ReferralsPage() {
@@ -13,12 +13,13 @@ export default function ReferralsPage() {
     { userId: user?.id || 0 },
     { query: { enabled: !!user?.id } as never }
   );
-  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    if (referrals?.referralLink) {
+    if (referrals?.referralLink && !copied) {
       navigator.clipboard.writeText(referrals.referralLink);
-      toast({ title: t.copied, description: t.copiedDesc });
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -61,8 +62,14 @@ export default function ReferralsPage() {
           <LinkIcon className="w-4 h-4 text-muted-foreground mr-2 shrink-0" />
           <span className="text-sm truncate text-muted-foreground">{referrals.referralLink}</span>
         </div>
-        <Button onClick={handleCopy} className="bg-primary text-primary-foreground hover:bg-primary/90 h-auto px-6 rounded-xl">
-          <Copy className="w-4 h-4" />
+        <Button
+          onClick={handleCopy}
+          className="bg-primary text-primary-foreground hover:bg-primary/90 h-auto px-6 rounded-xl transition-all"
+        >
+          {copied
+            ? <Check className="w-4 h-4 text-black" />
+            : <Copy className="w-4 h-4" />
+          }
         </Button>
       </div>
 

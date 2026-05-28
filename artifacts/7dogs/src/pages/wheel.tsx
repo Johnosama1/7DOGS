@@ -19,6 +19,7 @@ export default function WheelPage() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [landingSegmentId, setLandingSegmentId] = useState<number>();
   const [showLangPicker, setShowLangPicker] = useState(false);
+  const [winLabel, setWinLabel] = useState<string | null>(null);
 
   const handleSpin = () => {
     if (!user) return;
@@ -42,11 +43,8 @@ export default function WheelPage() {
       queryClient.invalidateQueries({ queryKey: getGetMeQueryKey({ telegramId: user.telegramId }) });
     }
     if (spinMutation.data) {
-      toast({
-        title: t.winTitle,
-        description: t.winDesc(spinMutation.data.label),
-        className: "bg-primary border-none text-primary-foreground",
-      });
+      setWinLabel(`+${spinMutation.data.label}`);
+      setTimeout(() => setWinLabel(null), 2200);
     }
   };
 
@@ -123,7 +121,19 @@ export default function WheelPage() {
       </div>
 
       {/* Wheel */}
-      <div className="flex-1 flex flex-col items-center px-2">
+      <div className="flex-1 flex flex-col items-center px-2 relative">
+        {/* Floating win animation */}
+        {winLabel && (
+          <div
+            key={winLabel + Date.now()}
+            className="absolute top-1/3 left-1/2 -translate-x-1/2 z-50 pointer-events-none
+                       flex items-center gap-1.5 bg-primary text-black font-black text-3xl
+                       px-6 py-3 rounded-full shadow-[0_0_30px_rgba(212,175,55,0.8)]
+                       animate-[floatUp_2.2s_ease-out_forwards]"
+          >
+            🪙 {winLabel}
+          </div>
+        )}
         <SpinningWheel
           segments={segments || []}
           isSpinning={isSpinning}
