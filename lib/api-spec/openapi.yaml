@@ -1,22 +1,34 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: 7DOGS Telegram Mini App API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: User operations
+  - name: wheel
+    description: Spin wheel operations
+  - name: referrals
+    description: Referral operations
+  - name: gifts
+    description: Gift operations
+  - name: channels
+    description: Required channel operations
+  - name: admin
+    description: Admin operations
+  - name: settings
+    description: App settings
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +36,1146 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Users ──────────────────────────────────────────────────────────
+  /users/me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get or create current user (by Telegram init data)
+      parameters:
+        - in: query
+          name: telegramId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: firstName
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: lastName
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: username
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: referralCode
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/stats:
+    get:
+      operationId: getUserStats
+      tags: [users]
+      summary: Global stats (total users, total coins issued, spins done)
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GlobalStats"
+
+  # ── Wheel ───────────────────────────────────────────────────────────
+  /wheel/segments:
+    get:
+      operationId: getWheelSegments
+      tags: [wheel]
+      summary: Get wheel segments (publicly visible rewards)
+      responses:
+        "200":
+          description: Segments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WheelSegment"
+
+  /wheel/spin:
+    post:
+      operationId: spinWheel
+      tags: [wheel]
+      summary: Spin the wheel for the current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpinRequest"
+      responses:
+        "200":
+          description: Spin result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpinResult"
+        "400":
+          description: No spins remaining or wheel disabled
+
+  /wheel/history:
+    get:
+      operationId: getSpinHistory
+      tags: [wheel]
+      summary: Get spin history for a user
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: History
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpinRecord"
+
+  # ── Referrals ───────────────────────────────────────────────────────
+  /referrals:
+    get:
+      operationId: getReferrals
+      tags: [referrals]
+      summary: Get referrals for a user
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Referral info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferralInfo"
+
+  # ── Gifts ────────────────────────────────────────────────────────────
+  /gifts:
+    get:
+      operationId: getGifts
+      tags: [gifts]
+      summary: List all publicly visible gifts
+      responses:
+        "200":
+          description: Gifts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Gift"
+
+  /gifts/{giftId}/redeem:
+    post:
+      operationId: redeemGift
+      tags: [gifts]
+      summary: Redeem a gift using coins
+      parameters:
+        - in: path
+          name: giftId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RedeemRequest"
+      responses:
+        "200":
+          description: Redemption record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Redemption"
+        "400":
+          description: Insufficient coins, out of stock, or gift disabled
+
+  /gifts/my-redemptions:
+    get:
+      operationId: getMyRedemptions
+      tags: [gifts]
+      summary: Get redeemed gifts for a user
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Redemptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Redemption"
+
+  # ── Settings (public) ───────────────────────────────────────────────
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get public app settings (maintenance mode, section disables, referral rules)
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+
+  # ── Admin ────────────────────────────────────────────────────────────
+  /admin/verify:
+    post:
+      operationId: adminVerify
+      tags: [admin]
+      summary: Verify admin password and get a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminVerifyInput"
+      responses:
+        "200":
+          description: Token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminToken"
+        "401":
+          description: Invalid password
+
+  /admin/users:
+    get:
+      operationId: adminGetUsers
+      tags: [admin]
+      summary: Get all users (paginated, searchable)
+      parameters:
+        - in: query
+          name: search
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUsersPage"
+
+  /admin/users/{userId}/balance:
+    patch:
+      operationId: adminAdjustBalance
+      tags: [admin]
+      summary: Add or remove coins/spins for a user
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BalanceAdjustment"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /admin/wheel:
+    get:
+      operationId: adminGetWheel
+      tags: [admin]
+      summary: Get all wheel segments (including disabled)
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Segments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WheelSegment"
+    post:
+      operationId: adminCreateSegment
+      tags: [admin]
+      summary: Add a wheel segment
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WheelSegmentInput"
+      responses:
+        "201":
+          description: Created segment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WheelSegment"
+
+  /admin/wheel/{segmentId}:
+    patch:
+      operationId: adminUpdateSegment
+      tags: [admin]
+      parameters:
+        - in: path
+          name: segmentId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WheelSegmentUpdate"
+      responses:
+        "200":
+          description: Updated segment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WheelSegment"
+    delete:
+      operationId: adminDeleteSegment
+      tags: [admin]
+      parameters:
+        - in: path
+          name: segmentId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/gifts:
+    get:
+      operationId: adminGetGifts
+      tags: [admin]
+      summary: Get all gifts (including disabled) for admin management
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Gifts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Gift"
+    post:
+      operationId: adminCreateGift
+      tags: [admin]
+      summary: Add a new gift
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GiftInput"
+      responses:
+        "201":
+          description: Created gift
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gift"
+
+  /admin/gifts/{giftId}:
+    patch:
+      operationId: adminUpdateGift
+      tags: [admin]
+      parameters:
+        - in: path
+          name: giftId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GiftUpdate"
+      responses:
+        "200":
+          description: Updated gift
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gift"
+    delete:
+      operationId: adminDeleteGift
+      tags: [admin]
+      parameters:
+        - in: path
+          name: giftId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/settings:
+    patch:
+      operationId: adminUpdateSettings
+      tags: [admin]
+      summary: Update app settings (maintenance, section disables, referral rules)
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+
+  # ── Channels ───────────────────────────────────────────────────────
+  /channels:
+    get:
+      operationId: getChannels
+      tags: [channels]
+      summary: Get all enabled required channels
+      responses:
+        "200":
+          description: List of required channels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequiredChannel"
+
+  /channels/check:
+    get:
+      operationId: checkChannelMembership
+      tags: [channels]
+      summary: Check which required channels the user has NOT joined yet
+      parameters:
+        - in: query
+          name: telegramId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Channels the user still needs to join
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequiredChannel"
+
+  /admin/channels:
+    get:
+      operationId: adminGetChannels
+      tags: [admin]
+      summary: Get all required channels (admin)
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: All channels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequiredChannel"
+    post:
+      operationId: adminAddChannel
+      tags: [admin]
+      summary: Add a required channel
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChannelInput"
+      responses:
+        "201":
+          description: Created channel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequiredChannel"
+
+  /admin/channels/{channelId}:
+    delete:
+      operationId: adminDeleteChannel
+      tags: [admin]
+      summary: Delete a required channel
+      parameters:
+        - in: path
+          name: channelId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+    patch:
+      operationId: adminToggleChannel
+      tags: [admin]
+      summary: Toggle channel enabled/disabled
+      parameters:
+        - in: path
+          name: channelId
+          required: true
+          schema:
+            type: integer
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated channel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequiredChannel"
+
+  /admin/logs:
+    get:
+      operationId: adminGetLogs
+      tags: [admin]
+      summary: Get admin action logs
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminLog"
+
+  /admin/broadcast:
+    post:
+      operationId: adminBroadcast
+      tags: [admin]
+      summary: Send a broadcast message to all users via Telegram
+      parameters:
+        - in: header
+          name: x-admin-token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BroadcastInput"
+      responses:
+        "200":
+          description: Broadcast result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BroadcastResult"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    User:
+      type: object
+      required: [id, telegramId, firstName, coins, spins, totalReferrals, createdAt]
+      properties:
+        id:
+          type: integer
+        telegramId:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: ["string", "null"]
+        username:
+          type: ["string", "null"]
+        coins:
+          type: integer
+        spins:
+          type: integer
+        totalReferrals:
+          type: integer
+        createdAt:
+          type: string
+
+    GlobalStats:
+      type: object
+      required: [totalUsers, totalCoinsIssued, totalSpins, totalRedemptions]
+      properties:
+        totalUsers:
+          type: integer
+        totalCoinsIssued:
+          type: integer
+        totalSpins:
+          type: integer
+        totalRedemptions:
+          type: integer
+
+    WheelSegment:
+      type: object
+      required: [id, label, rewardType, rewardAmount, probability, color, enabled]
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        rewardType:
+          type: string
+          enum: [coins, spins, gift]
+        rewardAmount:
+          type: integer
+        giftId:
+          type: ["integer", "null"]
+        probability:
+          type: number
+          description: Probability weight (relative, not necessarily summing to 1)
+        color:
+          type: string
+        enabled:
+          type: boolean
+
+    WheelSegmentInput:
+      type: object
+      required: [label, rewardType, rewardAmount, probability, color]
+      properties:
+        label:
+          type: string
+        rewardType:
+          type: string
+          enum: [coins, spins, gift]
+        rewardAmount:
+          type: integer
+        giftId:
+          type: ["integer", "null"]
+        probability:
+          type: number
+        color:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+
+    WheelSegmentUpdate:
+      type: object
+      properties:
+        label:
+          type: string
+        rewardType:
+          type: string
+          enum: [coins, spins, gift]
+        rewardAmount:
+          type: integer
+        giftId:
+          type: ["integer", "null"]
+        probability:
+          type: number
+        color:
+          type: string
+        enabled:
+          type: boolean
+
+    SpinRequest:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: integer
+
+    SpinResult:
+      type: object
+      required: [segmentId, label, rewardType, rewardAmount, newCoins, newSpins]
+      properties:
+        segmentId:
+          type: integer
+        label:
+          type: string
+        rewardType:
+          type: string
+        rewardAmount:
+          type: integer
+        newCoins:
+          type: integer
+        newSpins:
+          type: integer
+        landingAngle:
+          type: number
+
+    SpinRecord:
+      type: object
+      required: [id, userId, segmentId, label, rewardType, rewardAmount, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        segmentId:
+          type: integer
+        label:
+          type: string
+        rewardType:
+          type: string
+        rewardAmount:
+          type: integer
+        createdAt:
+          type: string
+
+    ReferralInfo:
+      type: object
+      required: [userId, referralLink, totalReferrals, referralsRequired, rewardType, rewardAmount, nextRewardAt, referralList]
+      properties:
+        userId:
+          type: integer
+        referralLink:
+          type: string
+        totalReferrals:
+          type: integer
+        referralsRequired:
+          type: integer
+        rewardType:
+          type: string
+        rewardAmount:
+          type: integer
+        nextRewardAt:
+          type: integer
+        referralList:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReferralEntry"
+
+    ReferralEntry:
+      type: object
+      required: [id, firstName, username, joinedAt]
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        username:
+          type: ["string", "null"]
+        joinedAt:
+          type: string
+
+    Gift:
+      type: object
+      required: [id, name, coinPrice, enabled, imageUrl]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        coinPrice:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        stock:
+          type: ["integer", "null"]
+        enabled:
+          type: boolean
+
+    GiftInput:
+      type: object
+      required: [name, coinPrice]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        coinPrice:
+          type: integer
+        imageUrl:
+          type: string
+        stock:
+          type: ["integer", "null"]
+        enabled:
+          type: boolean
+          default: true
+
+    GiftUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        coinPrice:
+          type: integer
+        imageUrl:
+          type: string
+        stock:
+          type: ["integer", "null"]
+        enabled:
+          type: boolean
+
+    RedeemRequest:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: integer
+
+    Redemption:
+      type: object
+      required: [id, userId, giftId, giftName, coinsCost, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        giftId:
+          type: integer
+        giftName:
+          type: string
+        giftImageUrl:
+          type: ["string", "null"]
+        coinsCost:
+          type: integer
+        status:
+          type: string
+          enum: [pending, fulfilled, cancelled]
+        createdAt:
+          type: string
+
+    AppSettings:
+      type: object
+      required: [maintenanceMode, wheelEnabled, referralsEnabled, giftsEnabled, redeemEnabled, accountEnabled, referralsRequired, referralRewardType, referralRewardAmount, botUsername]
+      properties:
+        maintenanceMode:
+          type: boolean
+        wheelEnabled:
+          type: boolean
+        referralsEnabled:
+          type: boolean
+        giftsEnabled:
+          type: boolean
+        redeemEnabled:
+          type: boolean
+        accountEnabled:
+          type: boolean
+        referralsRequired:
+          type: integer
+        referralRewardType:
+          type: string
+          enum: [coins, spins]
+        referralRewardAmount:
+          type: integer
+        botUsername:
+          type: string
+
+    SettingsUpdate:
+      type: object
+      properties:
+        maintenanceMode:
+          type: boolean
+        wheelEnabled:
+          type: boolean
+        referralsEnabled:
+          type: boolean
+        giftsEnabled:
+          type: boolean
+        redeemEnabled:
+          type: boolean
+        accountEnabled:
+          type: boolean
+        referralsRequired:
+          type: integer
+        referralRewardType:
+          type: string
+          enum: [coins, spins]
+        referralRewardAmount:
+          type: integer
+        botUsername:
+          type: string
+
+    AdminVerifyInput:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+
+    AdminToken:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    AdminUsersPage:
+      type: object
+      required: [users, total, page, limit]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    BalanceAdjustment:
+      type: object
+      required: [type, amount]
+      properties:
+        type:
+          type: string
+          enum: [coins, spins]
+        amount:
+          type: integer
+          description: Positive to add, negative to remove
+
+    AdminLog:
+      type: object
+      required: [id, action, details, createdAt]
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        details:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    RequiredChannel:
+      type: object
+      required: [id, name, username, link, enabled, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        username:
+          type: string
+        link:
+          type: string
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+
+    ChannelInput:
+      type: object
+      required: [name, username, link]
+      properties:
+        name:
+          type: string
+        username:
+          type: string
+        link:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+
+    BroadcastInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: Message text (supports Telegram HTML)
+        parseMode:
+          type: string
+          enum: [HTML, Markdown]
+          default: HTML
+        photoUrl:
+          type: ["string", "null"]
+          description: Optional photo URL to attach
+
+    BroadcastResult:
+      type: object
+      required: [total, sent, failed]
+      properties:
+        total:
+          type: integer
+        sent:
+          type: integer
+        failed:
+          type: integer

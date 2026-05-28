@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "7DOGS Mini App"
+version = "1.0.0"
+id = "artifacts/7dogs"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23860
+
+[services.development]
+run = "pnpm --filter @workspace/7dogs run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/7dogs", "run", "build" ]
+publicDir = "artifacts/7dogs/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23860"
+BASE_PATH = "/"
