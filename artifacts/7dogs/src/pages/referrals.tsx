@@ -4,7 +4,7 @@ import { useLang } from "@/context/language-context";
 import { useGetReferrals } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Copy, Check, Users, Link as LinkIcon, Gift } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+
 
 export default function ReferralsPage() {
   const { user } = useUser();
@@ -51,7 +51,9 @@ export default function ReferralsPage() {
           <span className="text-muted-foreground">{t.progress}</span>
           <span className="font-bold text-primary">{referrals.totalReferrals} / {referrals.referralsRequired}</span>
         </div>
-        <Progress value={progressPercentage} className="h-2 mb-4 bg-background" />
+        <div className="h-2 mb-4 w-full overflow-hidden rounded-full bg-background">
+          <div className="h-full bg-primary transition-all" style={{ width: `${progressPercentage}%` }} />
+        </div>
         <p className="text-sm text-muted-foreground">
           {t.reward}: <strong className="text-foreground">{referrals.rewardAmount} {referrals.rewardType}</strong>
         </p>
