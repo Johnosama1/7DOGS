@@ -1,0 +1,115 @@
+I have a Telegram bot called "7DOGS" (username: SevenDogsBot) built with Node.js. 
+I need you to fix the following issues and add missing features:
+
+---
+
+## BUGS TO FIX:
+
+### 1. Feature Toggles Not Working
+All toggles in the admin panel (Maintenance Mode, Spin Wheel, Gifts Shop, 
+Referrals, Redeem, Account Page) are showing "Failed" when saving. 
+Fix the save functionality so toggles persist correctly in the database.
+
+### 2. Broadcast Message Failing
+The broadcast message feature shows "Broadcast failed" error. 
+Fix it so the admin can send a Telegram message to all registered users.
+
+### 3. Gifts Manager Failing
+Adding a new gift (e.g., "Lunar Snake", price: 1000 coins, stock: 10, 
+link: t.me/nft/LunarSnake-19055) shows "Failed" error. Fix the add gift functionality.
+
+### 4. Required Channels Error
+The Required Channels section shows "Error" when trying to save channels 
+(Zigzjn, @CRYPTO2KING1). Fix the save functionality.
+
+### 5. Settings & Config "Failed to save"
+Saving settings (referrals per reward: 13, reward type: Spins, amount: 1, 
+bot username: SevenDogsBot) shows "Failed to save". Fix it.
+
+### 6. Referral Link Broken
+The referral link format is wrong. It MUST follow this exact format:
+t.me/SevenDogsBot?start={userId}
+Where {userId} is the Telegram ID of the referring user.
+Fix the referral link generation.
+
+---
+
+## MISSING FEATURES TO ADD:
+
+### 7. Admin: Add/Remove Coins & Spins for Any User
+In the admin panel, add a "User Management" section where admin can:
+- Search for a user by username or Telegram ID
+- Add coins to a user
+- Remove coins from a user
+- Add spins to a user
+- Remove spins from a user
+
+### 8. Spin Wheel: Show Existing Prizes
+The spin wheel editor shows "No segments yet" even though prizes exist 
+in the bot. Make the existing wheel prizes visible and editable in the 
+admin panel.
+
+### 9. User Profile Photo from Telegram
+On the Account page (user side), show the user's Telegram profile photo 
+at the top. Use the Telegram Bot API getUserProfilePhotos method to fetch 
+and display the photo.
+
+---
+
+## ANTI-CHEAT: Device Fingerprint System
+
+I have an existing file called `fp.html` that detects duplicate accounts 
+from the same device using browser fingerprinting.
+
+### How it works:
+- When a user opens the bot for the first time, they load fp.html
+- fp.html generates a unique device fingerprint (based on browser/device data)
+- This fingerprint is sent to the backend and saved with the user's Telegram ID
+
+### What needs to be integrated:
+
+1. **Serve fp.html** through the bot - when user starts the bot or opens 
+   the Mini App, load fp.html first to collect the fingerprint
+
+2. **Save fingerprint in database** - store: 
+   { telegramId, fingerprint, createdAt }
+
+3. **Check for duplicates** - before counting a referral:
+   - Check if this fingerprint already exists in the database
+   - If fingerprint belongs to a DIFFERENT Telegram ID → mark as duplicate
+   - Do NOT count the referral reward for duplicate accounts
+
+4. **Block duplicate users** - if a user is detected as duplicate:
+   - Show them a message: "This device is already registered with another account"
+   - Do not give them coins, spins, or referral rewards
+
+5. **Admin can see flagged users** - in the User Management section, 
+   show a "⚠️ Duplicate Device" badge next to flagged accounts
+
+6. **The fingerprint check must happen:**
+   - On /start command
+   - When a referral link is used (?start={userId})
+   - When the Mini App loads
+
+---
+
+## DEPLOYMENT: Move from Replit to Vercel
+
+The bot currently runs on Replit. I need to migrate it to run on Vercel 
+as a serverless deployment with webhook (not polling).
+
+Requirements:
+1. Change bot from polling mode to webhook mode
+2. Create a vercel.json configuration file
+3. Make sure the webhook endpoint is: /api/webhook
+4. The bot must work 24/7 on Vercel
+
+## Required Environment Variables for Vercel:
+List ALL environment variables this project needs so I can add them in 
+Vercel dashboard (Settings > Environment Variables). Include:
+- BOT_TOKEN (Telegram bot token)
+- DATABASE_URL or equivalent
+- WEBHOOK_URL (the Vercel deployment URL)
+- Any other variables the code uses
+
+Please list them all clearly at the end.

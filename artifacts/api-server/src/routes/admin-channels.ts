@@ -7,7 +7,13 @@ import { ADMIN_TOKENS } from "./admin";
 const router = Router();
 
 function requireAdmin(req: any, res: any): boolean {
-  const token = req.headers["x-admin-token"] as string;
+  const xToken = req.headers["x-admin-token"];
+  const auth = req.headers["authorization"];
+  const bearerToken =
+    auth && typeof auth === "string" && auth.startsWith("Bearer ")
+      ? auth.slice(7)
+      : null;
+  const token = (xToken as string) || bearerToken || "";
   if (!token || !ADMIN_TOKENS.has(token)) {
     res.status(401).json({ error: "Unauthorized" });
     return false;

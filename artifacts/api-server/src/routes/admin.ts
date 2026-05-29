@@ -32,9 +32,20 @@ const router = Router();
 
 export const ADMIN_TOKENS = new Set<string>();
 
+function extractToken(req: any): string | null {
+  // Accept both x-admin-token header and Authorization: Bearer <token>
+  const xToken = req.headers["x-admin-token"];
+  if (xToken && typeof xToken === "string") return xToken;
+  const auth = req.headers["authorization"];
+  if (auth && typeof auth === "string" && auth.startsWith("Bearer ")) {
+    return auth.slice(7);
+  }
+  return null;
+}
+
 function validateToken(req: any, res: any): boolean {
-  const token = req.headers["x-admin-token"];
-  if (!token || !ADMIN_TOKENS.has(token as string)) {
+  const token = extractToken(req);
+  if (!token || !ADMIN_TOKENS.has(token)) {
     res.status(401).json({ error: "Unauthorized" });
     return false;
   }

@@ -67,7 +67,7 @@ router.get("/", async (req, res) => {
 
   res.json({
     userId: user.id,
-    referralLink: `https://t.me/${botUsername}?start=${user.id}`,
+    referralLink: `https://t.me/${botUsername}?start=${user.telegramId}`,
     totalReferrals: user.totalReferrals,
     referralsRequired,
     rewardType,

@@ -9,20 +9,28 @@ interface TelegramUserData {
   username: string;
 }
 
-function readTelegramUser(): TelegramUserData | null {
+interface TelegramInitData {
+  user: TelegramUserData | null;
+  startParam: string | null;
+}
+
+function readTelegramData(): TelegramInitData {
   try {
     const tg = (window as any).Telegram?.WebApp;
-    if (!tg) return null;
-    const user = tg.initDataUnsafe?.user;
-    if (!user?.id) return null;
-    return {
-      id: String(user.id),
-      firstName: user.first_name ?? "",
-      lastName: user.last_name ?? "",
-      username: user.username ?? "",
-    };
+    if (!tg) return { user: null, startParam: null };
+    const u = tg.initDataUnsafe?.user;
+    const startParam = tg.initDataUnsafe?.start_param ?? null;
+    const user = u?.id
+      ? {
+          id: String(u.id),
+          firstName: u.first_name ?? "",
+          lastName: u.last_name ?? "",
+          username: u.username ?? "",
+        }
+      : null;
+    return { user, startParam };
   } catch {
-    return null;
+    return { user: null, startParam: null };
   }
 }
 
@@ -37,26 +45,25 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   // Lazy init — reads Telegram data synchronously on first render
-  const [tgUser, setTgUser] = useState<TelegramUserData | null>(() =>
-    readTelegramUser()
+  const [tgData, setTgData] = useState<TelegramInitData>(() =>
+    readTelegramData()
   );
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg) {
-      // Signal to Telegram that the Mini App is ready
       tg.ready?.();
-      // Expand to full screen
       tg.expand?.();
     }
 
     // Re-read in case SDK wasn't ready on first render
-    if (!tgUser) {
-      const user = readTelegramUser();
-      if (user) setTgUser(user);
+    if (!tgData.user) {
+      const data = readTelegramData();
+      if (data.user) setTgData(data);
     }
   }, []);
 
+  const tgUser = tgData.user;
   const telegramId = tgUser?.id ?? "";
   const isReady = !!telegramId;
 
@@ -66,6 +73,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       firstName: tgUser?.firstName ?? "User",
       lastName: tgUser?.lastName ?? "",
       username: tgUser?.username ?? "",
+      // Pass start_param so referral is recorded when new user arrives via link
+      referralCode: tgData.startParam ?? undefined,
     },
     { query: { enabled: isReady } as never }
   );
