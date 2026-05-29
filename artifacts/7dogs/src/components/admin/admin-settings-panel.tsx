@@ -4,11 +4,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Smartphone } from "lucide-react";
 
 export function AdminSettingsPanel() {
   const { data: settings, isLoading } = useGetSettings();
   const updateMutation = useAdminUpdateSettings();
+  const [miniAppUrl, setMiniAppUrl] = useState("");
+  const [settingMenuBtn, setSettingMenuBtn] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -111,6 +113,55 @@ export function AdminSettingsPanel() {
             Used to build referral links: t.me/{botUsername}?start=...
           </p>
         </div>
+      </div>
+
+      {/* Mini App button setup */}
+      <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+        <p className="text-xs font-bold text-primary uppercase tracking-wide flex items-center gap-1.5">
+          <Smartphone className="w-3.5 h-3.5" /> Open App Button
+        </p>
+        <div>
+          <label className="text-[11px] text-muted-foreground block mb-1">Mini App URL (deployed URL)</label>
+          <Input
+            value={miniAppUrl}
+            onChange={(e) => setMiniAppUrl(e.target.value)}
+            placeholder="https://your-app.replit.app"
+            className="bg-background border-border text-sm h-9"
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Sets the "🎰 Open 7DOGS App" button in Telegram bot chat
+          </p>
+        </div>
+        <Button
+          onClick={async () => {
+            if (!miniAppUrl.trim()) return;
+            setSettingMenuBtn(true);
+            try {
+              const token = localStorage.getItem("admin_token") ?? "";
+              const res = await fetch("/api/admin/set-menu-button", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ miniAppUrl: miniAppUrl.trim() }),
+              });
+              const data = await res.json() as { ok?: boolean; error?: string };
+              if (data.ok) {
+                toast({ title: "✅ Menu button updated!", description: "Button now opens the mini app", className: "bg-card" });
+              } else {
+                toast({ title: "Failed: " + (data.error ?? "Unknown"), variant: "destructive" });
+              }
+            } catch {
+              toast({ title: "Network error", variant: "destructive" });
+            } finally {
+              setSettingMenuBtn(false);
+            }
+          }}
+          disabled={settingMenuBtn || !miniAppUrl.trim()}
+          size="sm"
+          className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold h-9"
+        >
+          {settingMenuBtn ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Smartphone className="w-4 h-4 mr-1" />}
+          {settingMenuBtn ? "Setting button..." : "Set Open App Button"}
+        </Button>
       </div>
 
       <Button

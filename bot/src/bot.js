@@ -11,6 +11,7 @@ const db = require("./db");
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const DATABASE_URL = process.env.DATABASE_URL;
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
+const MINI_APP_URL = process.env.MINI_APP_URL ?? "";
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
 const ADMIN_ID = parseInt(process.env.ADMIN_ID ?? "0", 10);
 const SPIN_COST = 10;
@@ -46,18 +47,25 @@ bot.start(async (ctx) => {
 
   const name = escapeHtml(from.first_name || from.username || "there");
 
-  await ctx.replyWithHTML(
+  const extra = {
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        MINI_APP_URL
+          ? [{ text: "🎰 Open 7DOGS App", web_app: { url: MINI_APP_URL } }]
+          : [],
+      ].filter((row) => row.length > 0),
+    },
+  };
+
+  await ctx.telegram.sendMessage(
+    ctx.chat.id,
     `🐕 <b>Welcome to 7DOGS, ${name}!</b>\n\n` +
     `Spin the lucky wheel and win amazing prizes!\n\n` +
     `🏆 Win up to <b>500 coins</b> per spin\n` +
     `👥 Invite friends for bonus rewards\n` +
-    `💸 Withdraw your winnings anytime\n\n` +
-    `<b>Commands:</b>\n` +
-    `/balance — Check your coins\n` +
-    `/spin — Spin the wheel (costs ${SPIN_COST} coins)\n` +
-    `/prizes — View all prizes\n` +
-    `/withdraw — Request a withdrawal\n\n` +
-    `🎁 You start with <b>0 coins</b>. Ask an admin to top you up!`
+    `💸 Withdraw your winnings anytime`,
+    extra
   );
 });
 
@@ -247,6 +255,22 @@ app.listen(PORT, async () => {
     console.log(`[7DOGS Bot] Webhook set → ${webhookFullUrl}`);
   } catch (err) {
     console.error("[7DOGS Bot] Failed to set webhook:", err.message);
+  }
+
+  // Set the persistent menu button to open the mini app
+  if (MINI_APP_URL) {
+    try {
+      await bot.telegram.setChatMenuButton({
+        menuButton: {
+          type: "web_app",
+          text: "🎰 Open 7DOGS App",
+          web_app: { url: MINI_APP_URL },
+        },
+      });
+      console.log(`[7DOGS Bot] Menu button set → ${MINI_APP_URL}`);
+    } catch (err) {
+      console.error("[7DOGS Bot] Failed to set menu button:", err.message);
+    }
   }
 });
 

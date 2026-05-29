@@ -555,6 +555,52 @@ router.get("/logs", async (req, res) => {
   })));
 });
 
+// POST /api/admin/set-menu-button
+// Sets the persistent Telegram bot menu button to open the mini app
+router.post("/set-menu-button", async (req, res) => {
+  if (!validateToken(req, res)) return;
+
+  const { miniAppUrl } = req.body as { miniAppUrl?: string };
+  const url = miniAppUrl || process.env.MINI_APP_URL;
+
+  if (!url) {
+    res.status(400).json({ error: "miniAppUrl is required (or set MINI_APP_URL env var)" });
+    return;
+  }
+
+  const botToken = process.env.BOT_TOKEN;
+  if (!botToken) {
+    res.status(503).json({ error: "BOT_TOKEN not configured" });
+    return;
+  }
+
+  try {
+    const resp = await fetch(`https://api.telegram.org/bot${botToken}/setChatMenuButton`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        menu_button: {
+          type: "web_app",
+          text: "🎰 Open 7DOGS App",
+          web_app: { url },
+        },
+      }),
+    });
+
+    const data = await resp.json() as { ok: boolean; description?: string };
+
+    if (!data.ok) {
+      res.status(400).json({ error: data.description ?? "Telegram API error" });
+      return;
+    }
+
+    await logAdminAction("set_menu_button", `Menu button set to: ${url}`);
+    res.json({ ok: true, url });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/admin/fetch-og-image?url=...
 // Fetches Open Graph image from a URL (used for t.me/nft gift links)
 router.get("/fetch-og-image", async (req, res) => {

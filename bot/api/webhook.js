@@ -125,6 +125,7 @@ const db = {
 // ── Bot setup ─────────────────────────────────────────────────────────────────
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const MINI_APP_URL = process.env.MINI_APP_URL ?? "";
 const ADMIN_ID = parseInt(process.env.ADMIN_ID ?? "0", 10);
 const SPIN_COST = 10;
 
@@ -145,18 +146,25 @@ bot.start(async (ctx) => {
   await db.getOrCreateUser(from.id, from.username);
   const name = escapeHtml(from.first_name || from.username || "there");
 
-  await ctx.replyWithHTML(
+  const extra = {
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        MINI_APP_URL
+          ? [{ text: "🎰 Open 7DOGS App", web_app: { url: MINI_APP_URL } }]
+          : [],
+      ].filter((row) => row.length > 0),
+    },
+  };
+
+  await ctx.telegram.sendMessage(
+    ctx.chat.id,
     `🐕 <b>Welcome to 7DOGS, ${name}!</b>\n\n` +
     `Spin the lucky wheel and win amazing prizes!\n\n` +
     `🏆 Win up to <b>500 coins</b> per spin\n` +
     `👥 Invite friends for bonus rewards\n` +
-    `💸 Withdraw your winnings anytime\n\n` +
-    `<b>Commands:</b>\n` +
-    `/balance — Check your coins\n` +
-    `/spin — Spin the wheel (costs ${SPIN_COST} coins)\n` +
-    `/prizes — View all prizes\n` +
-    `/withdraw [prize] — Request a withdrawal\n\n` +
-    `🎁 You start with <b>0 coins</b>. Ask an admin to top you up!`
+    `💸 Withdraw your winnings anytime`,
+    extra
   );
 });
 
