@@ -2,9 +2,14 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { requiredChannelsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { ADMIN_TOKENS } from "./admin";
+import crypto from "crypto";
 
 const router = Router();
+
+function generateToken(password: string): string {
+  const secret = process.env.TOKEN_SECRET ?? "7dogs-admin-secret-key";
+  return crypto.createHmac("sha256", secret).update(password).digest("hex");
+}
 
 function requireAdmin(req: any, res: any): boolean {
   const xToken = req.headers["x-admin-token"];
@@ -14,7 +19,13 @@ function requireAdmin(req: any, res: any): boolean {
       ? auth.slice(7)
       : null;
   const token = (xToken as string) || bearerToken || "";
-  if (!token || !ADMIN_TOKENS.has(token)) {
+  if (!token) {
+    res.status(401).json({ error: "Unauthorized" });
+    return false;
+  }
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin123";
+  const expected = generateToken(adminPassword);
+  if (token !== expected) {
     res.status(401).json({ error: "Unauthorized" });
     return false;
   }

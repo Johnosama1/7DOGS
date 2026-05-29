@@ -89,8 +89,8 @@ export function AdminToggles() {
                 value
                   ? isMaintenance
                     ? "bg-destructive"
-                    : "bg-primary"
-                  : "bg-border"
+                    : "bg-green-500"
+                  : "bg-red-500"
               }`}
             >
               <span

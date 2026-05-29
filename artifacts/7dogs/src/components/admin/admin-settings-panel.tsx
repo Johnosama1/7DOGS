@@ -15,7 +15,7 @@ export function AdminSettingsPanel() {
   const [referralsRequired, setReferralsRequired] = useState(5);
   const [referralRewardType, setReferralRewardType] = useState<"coins" | "spins">("spins");
   const [referralRewardAmount, setReferralRewardAmount] = useState(1);
-  const [botUsername, setBotUsername] = useState("SevenDogsBot");
+  const [botUsername, setBotUsername] = useState("mini_7DOGS_bot");
 
   useEffect(() => {
     if (!settings) return;
@@ -32,7 +32,7 @@ export function AdminSettingsPanel() {
           referralsRequired,
           referralRewardType,
           referralRewardAmount,
-          botUsername: botUsername.trim() || "SevenDogsBot",
+          botUsername: botUsername.trim() || "mini_7DOGS_bot",
         },
       },
       {
@@ -104,7 +104,7 @@ export function AdminSettingsPanel() {
           <Input
             value={botUsername}
             onChange={(e) => setBotUsername(e.target.value.replace("@", ""))}
-            placeholder="SevenDogsBot"
+            placeholder="mini_7DOGS_bot"
             className="bg-background border-border text-sm h-9"
           />
           <p className="text-[10px] text-muted-foreground mt-1">
