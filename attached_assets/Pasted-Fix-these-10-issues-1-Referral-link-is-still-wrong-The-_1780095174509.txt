@@ -1,0 +1,57 @@
+Fix these 10 issues:
+
+1. Referral link is still wrong. The bot username is @mini_7DOGS_bot
+The correct referral link format must be:
+https://t.me/mini_7DOGS_bot?start={userId}
+Replace any old bot username with: mini_7DOGS_bot
+
+2. Admin panel - all save operations still failing:
+- Feature Toggles (save on/off state)
+- Broadcast Message (send to all users)
+- Spin Wheel Editor (add/edit segments)
+- Gifts Manager (add gifts)
+- Required Channels (save channels)
+- User Management (search, add/remove coins and spins)
+- Settings & Config (save all settings)
+Find the root cause, check database connection, API routes, and error handling.
+
+3. Profile photo missing on Account page:
+On the Account page show the user's Telegram profile photo as a large circle at 
+the top. Use the same component already working on the Wheel page.
+
+4. Update vercel.json - delete everything and replace with:
+{
+  "version": 2,
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist/public"
+}
+If file does not exist, create it in root directory.
+
+5. Feature Toggles colors:
+- OFF → RED
+- ON → GREEN or YELLOW
+- When admin closes the panel → reset ALL toggles to OFF automatically
+
+6. Channel re-verification bug:
+- User joins → leaves → rejoins → clicks verify → bot shows error
+- Fix: re-check membership live from Telegram API on every verify click
+- If member → let them in. If not → show channels to join.
+
+7. Referrer vs referred user bug:
+- If user A refers user B, and user B leaves the channel
+- User A must NOT be blocked, only user B is blocked
+- Fix logic to restrict only the user who actually left
+
+8. /start channel check:
+- First time → show all channels user is NOT in
+- User was in but left → show ONLY channels they left
+- After rejoining → let them in normally
+
+9. Gift image auto-fetch:
+- When admin adds a gift with a Telegram link (t.me/nft/...)
+- Automatically fetch and display the gift image in the gifts shop
+
+10. All admin panel saves must work:
+- Fix all database writes
+- API routes must return proper success/error responses
