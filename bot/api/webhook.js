@@ -310,11 +310,41 @@ bot.command("pending", async (ctx) => {
   );
 });
 
-// ── Serverless handler ────────────────────────────────────────────────────────
+// ── Auto-register webhook on cold start (production) ─────────────────────────
+
+const IS_DEV = process.env.NODE_ENV === "development";
+const WEBHOOK_URL = process.env.WEBHOOK_URL ?? "";
+
+if (!IS_DEV && WEBHOOK_URL) {
+  const webhookTarget = `https://${WEBHOOK_URL}/api/webhook`;
+  bot.telegram
+    .setWebhook(webhookTarget, { allowed_updates: ["message", "callback_query"] })
+    .then(() => console.log(`[7DOGS] Webhook registered → ${webhookTarget}`))
+    .catch((err) => console.error("[7DOGS] Webhook registration failed:", err.message));
+
+  if (MINI_APP_URL) {
+    bot.telegram
+      .setChatMenuButton({
+        menuButton: {
+          type: "web_app",
+          text: "🎰 Open 7DOGS App",
+          web_app: { url: MINI_APP_URL },
+        },
+      })
+      .catch(() => {});
+  }
+}
+
+// ── Serverless / Development handler ─────────────────────────────────────────
 
 module.exports = async (req, res) => {
+  // Health check
+  if (req.method === "GET") {
+    return res.status(200).json({ status: "7DOGS Bot webhook active", mode: IS_DEV ? "development" : "production" });
+  }
+
   if (req.method !== "POST") {
-    return res.status(200).json({ status: "7DOGS Bot webhook is active" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {

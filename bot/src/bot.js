@@ -236,40 +236,57 @@ bot.command("pending", async (ctx) => {
   );
 });
 
-// ── Webhook setup ─────────────────────────────────────────────────────────────
+// ── Webhook / Polling setup ───────────────────────────────────────────────────
 
-const WEBHOOK_PATH = `/webhook/${BOT_TOKEN}`;
+const IS_DEV = process.env.NODE_ENV !== "production";
+const WEBHOOK_PATH = `/api/webhook`;
 
 app.use(bot.webhookCallback(WEBHOOK_PATH));
-
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 app.listen(PORT, async () => {
-  console.log(`[7DOGS Bot] Server listening on port ${PORT}`);
+  console.log(`[7DOGS Bot] Server listening on port ${PORT} (${IS_DEV ? "development" : "production"})`);
 
-  const webhookFullUrl = `${WEBHOOK_URL}${WEBHOOK_PATH}`;
-  try {
-    await bot.telegram.setWebhook(webhookFullUrl, {
-      allowed_updates: ["message"],
-    });
-    console.log(`[7DOGS Bot] Webhook set → ${webhookFullUrl}`);
-  } catch (err) {
-    console.error("[7DOGS Bot] Failed to set webhook:", err.message);
-  }
-
-  // Set the persistent menu button to open the mini app
-  if (MINI_APP_URL) {
+  if (IS_DEV) {
+    // ── Development: drop webhook and use polling ────────────────────────────
     try {
-      await bot.telegram.setChatMenuButton({
-        menuButton: {
-          type: "web_app",
-          text: "🎰 Open 7DOGS App",
-          web_app: { url: MINI_APP_URL },
-        },
-      });
-      console.log(`[7DOGS Bot] Menu button set → ${MINI_APP_URL}`);
+      await bot.telegram.deleteWebhook();
+      console.log("[7DOGS Bot] Webhook removed — starting polling...");
     } catch (err) {
-      console.error("[7DOGS Bot] Failed to set menu button:", err.message);
+      console.error("[7DOGS Bot] Failed to delete webhook:", err.message);
+    }
+    bot.launch().catch((err) => console.error("[7DOGS Bot] Polling error:", err.message));
+    console.log("[7DOGS Bot] Polling started");
+  } else {
+    // ── Production: register webhook with Telegram ───────────────────────────
+    if (!WEBHOOK_URL) {
+      console.error("[7DOGS Bot] WEBHOOK_URL is not set — cannot register webhook");
+    } else {
+      const webhookFullUrl = `https://${WEBHOOK_URL}${WEBHOOK_PATH}`;
+      try {
+        await bot.telegram.setWebhook(webhookFullUrl, {
+          allowed_updates: ["message", "callback_query"],
+        });
+        console.log(`[7DOGS Bot] Webhook registered → ${webhookFullUrl}`);
+      } catch (err) {
+        console.error("[7DOGS Bot] Failed to set webhook:", err.message);
+      }
+    }
+
+    // Set the persistent menu button to open the mini app
+    if (MINI_APP_URL) {
+      try {
+        await bot.telegram.setChatMenuButton({
+          menuButton: {
+            type: "web_app",
+            text: "🎰 Open 7DOGS App",
+            web_app: { url: MINI_APP_URL },
+          },
+        });
+        console.log(`[7DOGS Bot] Menu button set → ${MINI_APP_URL}`);
+      } catch (err) {
+        console.error("[7DOGS Bot] Failed to set menu button:", err.message);
+      }
     }
   }
 });
