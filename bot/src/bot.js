@@ -60,11 +60,11 @@ bot.start(async (ctx) => {
 
   await ctx.telegram.sendMessage(
     ctx.chat.id,
-    `🐕 <b>Welcome to 7DOGS, ${name}!</b>\n\n` +
-    `Spin the lucky wheel and win amazing prizes!\n\n` +
-    `🏆 Win up to <b>500 coins</b> per spin\n` +
-    `👥 Invite friends for bonus rewards\n` +
-    `💸 Withdraw your winnings anytime`,
+    `<tg-emoji emoji-id="5319007286004299794">👋</tg-emoji> Welcome to 7DOGS, ${name}!\n\n` +
+    `<tg-emoji emoji-id="6129832240303051599">😀</tg-emoji> The fastest NFT earning bot!\n\n` +
+    `<tg-emoji emoji-id="6131673419768403090">✨</tg-emoji> How to earn <tg-emoji emoji-id="5436113877181941026">❓</tg-emoji>\n\n` +
+    `<tg-emoji emoji-id="6203840986443944067">🔤</tg-emoji> Invite friends <tg-emoji emoji-id="5215229232476596064">➡️</tg-emoji> 1 free spin per 5 friends\n\n` +
+    `<tg-emoji emoji-id="5104986024807760966">🎰</tg-emoji> Spin the wheel <tg-emoji emoji-id="5215229232476596064">➡️</tg-emoji> win 50 to 1000!`,
     extra
   );
 });
