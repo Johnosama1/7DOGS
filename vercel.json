@@ -1,23 +1,12 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "bot/src/bot.js",
-      "use": "@vercel/node"
-    }
+    { "src": "bot/api/webhook.js", "use": "@vercel/node" },
+    { "src": "bot/api/setup.js",   "use": "@vercel/node" }
   ],
   "routes": [
-    {
-      "src": "/api/webhook",
-      "dest": "bot/src/bot.js"
-    },
-    {
-      "src": "/health",
-      "dest": "bot/src/bot.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "bot/src/bot.js"
-    }
+    { "src": "/api/webhook", "dest": "bot/api/webhook.js" },
+    { "src": "/api/setup",   "dest": "bot/api/setup.js"   },
+    { "src": "/health",      "dest": "bot/api/setup.js"   }
   ]
 }
