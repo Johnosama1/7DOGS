@@ -18,7 +18,7 @@ const SPIN_COST = 10;
 
 if (!BOT_TOKEN) throw new Error("BOT_TOKEN is required in .env");
 if (!DATABASE_URL) throw new Error("DATABASE_URL is required in .env");
-if (!WEBHOOK_URL) throw new Error("WEBHOOK_URL is required in .env");
+if (!WEBHOOK_URL) console.warn("[7DOGS Bot] WEBHOOK_URL not set — webhook registration will be skipped");
 
 const bot = new Telegraf(BOT_TOKEN);
 const app = express();
@@ -238,58 +238,55 @@ bot.command("pending", async (ctx) => {
 
 // ── Webhook / Polling setup ───────────────────────────────────────────────────
 
-const IS_DEV = process.env.NODE_ENV !== "production";
+const IS_DEV = process.env.NODE_ENV === "development";
 const WEBHOOK_PATH = `/api/webhook`;
 
+// Register webhook path — Telegram POSTs here
 app.use(bot.webhookCallback(WEBHOOK_PATH));
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-app.listen(PORT, async () => {
-  console.log(`[7DOGS Bot] Server listening on port ${PORT} (${IS_DEV ? "development" : "production"})`);
+// Health check
+app.get("/health", (_req, res) => res.json({ status: "ok", mode: IS_DEV ? "development" : "production" }));
 
-  if (IS_DEV) {
-    // ── Development: drop webhook and use polling ────────────────────────────
-    try {
-      await bot.telegram.deleteWebhook();
+// ── Development only: start polling ──────────────────────────────────────────
+if (IS_DEV) {
+  bot.telegram.deleteWebhook()
+    .then(() => {
       console.log("[7DOGS Bot] Webhook removed — starting polling...");
-    } catch (err) {
-      console.error("[7DOGS Bot] Failed to delete webhook:", err.message);
-    }
-    bot.launch().catch((err) => console.error("[7DOGS Bot] Polling error:", err.message));
-    console.log("[7DOGS Bot] Polling started");
+      return bot.launch();
+    })
+    .then(() => console.log("[7DOGS Bot] Polling started"))
+    .catch((err) => console.error("[7DOGS Bot] Polling error:", err.message));
+
+  // In development, also listen as a regular server
+  app.listen(PORT, () =>
+    console.log(`[7DOGS Bot] Dev server on port ${PORT}`)
+  );
+
+  process.once("SIGINT", () => bot.stop("SIGINT"));
+  process.once("SIGTERM", () => bot.stop("SIGTERM"));
+} else {
+  // ── Production: register webhook on cold start ────────────────────────────
+  if (WEBHOOK_URL) {
+    const webhookFullUrl = WEBHOOK_URL.startsWith("https://")
+      ? `${WEBHOOK_URL}${WEBHOOK_PATH}`
+      : `https://${WEBHOOK_URL}${WEBHOOK_PATH}`;
+
+    bot.telegram
+      .setWebhook(webhookFullUrl, { allowed_updates: ["message", "callback_query"] })
+      .then(() => console.log(`[7DOGS Bot] Webhook registered → ${webhookFullUrl}`))
+      .catch((err) => console.error("[7DOGS Bot] Failed to set webhook:", err.message));
   } else {
-    // ── Production: register webhook with Telegram ───────────────────────────
-    if (!WEBHOOK_URL) {
-      console.error("[7DOGS Bot] WEBHOOK_URL is not set — cannot register webhook");
-    } else {
-      const webhookFullUrl = WEBHOOK_URL.startsWith("https://") ? `${WEBHOOK_URL}${WEBHOOK_PATH}` : `https://${WEBHOOK_URL}${WEBHOOK_PATH}`;
-      try {
-        await bot.telegram.setWebhook(webhookFullUrl, {
-          allowed_updates: ["message", "callback_query"],
-        });
-        console.log(`[7DOGS Bot] Webhook registered → ${webhookFullUrl}`);
-      } catch (err) {
-        console.error("[7DOGS Bot] Failed to set webhook:", err.message);
-      }
-    }
-
-    // Set the persistent menu button to open the mini app
-    if (MINI_APP_URL) {
-      try {
-        await bot.telegram.setChatMenuButton({
-          menuButton: {
-            type: "web_app",
-            text: "🎰 Open 7DOGS App",
-            web_app: { url: MINI_APP_URL },
-          },
-        });
-        console.log(`[7DOGS Bot] Menu button set → ${MINI_APP_URL}`);
-      } catch (err) {
-        console.error("[7DOGS Bot] Failed to set menu button:", err.message);
-      }
-    }
+    console.warn("[7DOGS Bot] WEBHOOK_URL not set — skipping webhook registration");
   }
-});
 
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
+  if (MINI_APP_URL) {
+    bot.telegram
+      .setChatMenuButton({
+        menuButton: { type: "web_app", text: "🎰 Open 7DOGS App", web_app: { url: MINI_APP_URL } },
+      })
+      .catch(() => {});
+  }
+}
+
+// ── Export for Vercel serverless ──────────────────────────────────────────────
+module.exports = app;

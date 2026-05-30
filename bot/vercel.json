@@ -2,22 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "bot/src/bot.js",
+      "src": "api/webhook.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/webhook",
-      "dest": "bot/src/bot.js"
+      "dest": "api/webhook.js"
     },
     {
       "src": "/health",
-      "dest": "bot/src/bot.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "bot/src/bot.js"
+      "dest": "api/webhook.js"
     }
   ]
 }
