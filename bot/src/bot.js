@@ -290,3 +290,4 @@ if (IS_DEV) {
 
 // ── Export for Vercel serverless ──────────────────────────────────────────────
 module.exports = app;
+module.exports.bot = bot;
