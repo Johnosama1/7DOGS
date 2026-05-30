@@ -1,0 +1,14 @@
+{
+  "name": "7dogs-bot",
+  "version": "1.0.0",
+  "description": "7DOGS Telegram Lucky Wheel Bot — Vercel Serverless",
+  "private": true,
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.3",
+    "telegraf": "^4.16.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
