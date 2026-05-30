@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getServerUrl } from "../lib/server-url";
 import { db } from "@workspace/db";
 import {
   usersTable,
@@ -561,10 +562,10 @@ router.post("/set-menu-button", async (req, res) => {
   if (!validateToken(req, res)) return;
 
   const { miniAppUrl } = req.body as { miniAppUrl?: string };
-  const url = miniAppUrl || process.env.MINI_APP_URL;
+  const url = miniAppUrl?.trim() || process.env.MINI_APP_URL || getServerUrl(req);
 
   if (!url) {
-    res.status(400).json({ error: "miniAppUrl is required (or set MINI_APP_URL env var)" });
+    res.status(400).json({ error: "miniAppUrl is required (or set SERVER_URL / VERCEL_URL env var)" });
     return;
   }
 

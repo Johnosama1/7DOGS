@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { usersTable, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { getServerUrl } from "../lib/server-url";
 
 const router = Router();
 
@@ -46,7 +47,7 @@ router.post("/webhook", async (req, res) => {
 
       const [botUsername, appUrl] = await Promise.all([
         getSettingValue("bot_username", "7DogsBot"),
-        getSettingValue("app_url", process.env.APP_URL ?? ""),
+        getSettingValue("app_url", process.env.APP_URL ?? getServerUrl(req)),
       ]);
 
       const name = from.first_name || from.username || "there";
@@ -78,27 +79,27 @@ router.post("/webhook", async (req, res) => {
 });
 
 // POST /api/telegram/set-webhook  (admin utility — call once after deploy)
+// Body: { url?: string }  — omit to auto-detect from SERVER_URL / VERCEL_URL
 router.post("/set-webhook", async (req, res) => {
-  const { url } = req.body as { url?: string };
-  if (!url) {
-    res.status(400).json({ error: "url is required" });
-    return;
-  }
   if (!BOT_TOKEN) {
     res.status(503).json({ error: "BOT_TOKEN not configured" });
     return;
   }
+
+  const { url: bodyUrl } = req.body as { url?: string };
+  const base = bodyUrl?.trim() || getServerUrl(req);
+  const webhookUrl = `${base}/api/telegram/webhook`;
 
   const resp = await fetch(
     `https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, allowed_updates: ["message"] }),
+      body: JSON.stringify({ url: webhookUrl, allowed_updates: ["message", "callback_query"] }),
     }
   );
   const data = (await resp.json()) as Record<string, unknown>;
-  res.json(data);
+  res.json({ ...data, registered_to: webhookUrl });
 });
 
 // GET /api/telegram/webhook-info
