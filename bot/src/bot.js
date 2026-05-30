@@ -262,7 +262,7 @@ app.listen(PORT, async () => {
     if (!WEBHOOK_URL) {
       console.error("[7DOGS Bot] WEBHOOK_URL is not set — cannot register webhook");
     } else {
-      const webhookFullUrl = `https://${WEBHOOK_URL}${WEBHOOK_PATH}`;
+      const webhookFullUrl = WEBHOOK_URL.startsWith("https://") ? `${WEBHOOK_URL}${WEBHOOK_PATH}` : `https://${WEBHOOK_URL}${WEBHOOK_PATH}`;
       try {
         await bot.telegram.setWebhook(webhookFullUrl, {
           allowed_updates: ["message", "callback_query"],

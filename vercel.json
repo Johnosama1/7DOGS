@@ -2,25 +2,22 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/index.ts",
+      "src": "bot/src/bot.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist/public"
-      }
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "server/index.ts"
+      "src": "/api/webhook",
+      "dest": "bot/src/bot.js"
+    },
+    {
+      "src": "/health",
+      "dest": "bot/src/bot.js"
     },
     {
       "src": "/(.*)",
-      "dest": "dist/public/$1"
+      "dest": "bot/src/bot.js"
     }
   ]
 }
