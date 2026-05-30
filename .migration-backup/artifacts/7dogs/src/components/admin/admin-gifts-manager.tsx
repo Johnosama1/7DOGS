@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   useAdminGetGifts,
   useAdminCreateGift,
@@ -10,7 +10,25 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Check, X, Pencil, Loader2, Eye, EyeOff, Package } from "lucide-react";
+import { Plus, Trash2, Check, X, Pencil, Loader2, Eye, EyeOff, Package, ImageOff } from "lucide-react";
+
+async function fetchOgImage(imageUrl: string, authToken: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `/api/admin/fetch-og-image?url=${encodeURIComponent(imageUrl)}`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json() as { imageUrl?: string | null };
+    return data.imageUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function getAuthToken(): string {
+  return localStorage.getItem("admin_token") ?? "";
+}
 
 const GIFTS_KEY = ["/api/admin/gifts"];
 
@@ -44,6 +62,36 @@ export function AdminGiftsManager() {
   const [form, setForm] = useState<GiftForm>(blank());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<GiftForm>>({});
+  const [fetchingOg, setFetchingOg] = useState(false);
+  const ogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleImageUrlChange = useCallback(async (url: string, isEdit = false) => {
+    if (isEdit) {
+      setEditForm(prev => ({ ...prev, imageUrl: url }));
+    } else {
+      setForm(prev => ({ ...prev, imageUrl: url }));
+    }
+
+    if (!url.includes("t.me")) return;
+
+    if (ogTimerRef.current) clearTimeout(ogTimerRef.current);
+    ogTimerRef.current = setTimeout(async () => {
+      setFetchingOg(true);
+      const token = getAuthToken();
+      const ogUrl = await fetchOgImage(url, token);
+      setFetchingOg(false);
+      if (ogUrl) {
+        if (isEdit) {
+          setEditForm(prev => ({ ...prev, imageUrl: ogUrl }));
+        } else {
+          setForm(prev => ({ ...prev, imageUrl: ogUrl }));
+        }
+        toast({ title: "🖼 Image auto-fetched from t.me", className: "bg-card" });
+      } else {
+        toast({ title: "Could not fetch image from this link", variant: "destructive" });
+      }
+    }, 800);
+  }, [toast]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: GIFTS_KEY });
 
@@ -166,12 +214,20 @@ export function AdminGiftsManager() {
               />
             </div>
           </div>
-          <Input
-            placeholder="Image URL (optional)"
-            value={form.imageUrl}
-            onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-            className="bg-background border-border text-sm h-9"
-          />
+          <div className="relative">
+            <Input
+              placeholder="Image URL or t.me/nft/... link"
+              value={form.imageUrl}
+              onChange={(e) => handleImageUrlChange(e.target.value, false)}
+              className="bg-background border-border text-sm h-9 pr-8"
+            />
+            {fetchingOg && (
+              <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-primary" />
+            )}
+          </div>
+          {form.imageUrl && !form.imageUrl.includes("t.me") && (
+            <img src={form.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-border mt-1" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+          )}
           <div className="flex gap-2">
             <Button type="submit" size="sm" className="flex-1 bg-primary text-black h-8 text-xs" disabled={createMutation.isPending}>
               {createMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Add"}
@@ -201,7 +257,10 @@ export function AdminGiftsManager() {
                       <Input type="number" value={editForm.coinPrice ?? 0} onChange={(e) => setEditForm({ ...editForm, coinPrice: parseInt(e.target.value) || 0 })} className="bg-background border-border text-xs h-7" placeholder="Price" />
                       <Input type="number" value={editForm.stock ?? ""} onChange={(e) => setEditForm({ ...editForm, stock: e.target.value ? parseInt(e.target.value) : null })} className="bg-background border-border text-xs h-7" placeholder="Stock (∞)" />
                     </div>
-                    <Input value={editForm.imageUrl ?? ""} onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })} className="bg-background border-border text-xs h-7" placeholder="Image URL" />
+                    <div className="relative">
+                      <Input value={editForm.imageUrl ?? ""} onChange={(e) => handleImageUrlChange(e.target.value, true)} className="bg-background border-border text-xs h-7 pr-7" placeholder="Image URL or t.me/nft/..." />
+                      {fetchingOg && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 animate-spin text-primary" />}
+                    </div>
                     <div className="flex gap-1.5">
                       <button onClick={() => saveEdit(g.id)} className="flex items-center gap-1 px-3 py-1 bg-primary text-black text-xs rounded-lg font-bold" disabled={updateMutation.isPending}>
                         <Check className="w-3 h-3" /> Save

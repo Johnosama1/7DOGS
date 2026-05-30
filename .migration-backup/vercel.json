@@ -1,6 +1,12 @@
 {
   "version": 2,
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm run build",
-  "outputDirectory": "dist/public"
+  "builds": [
+    { "src": "bot/api/webhook.js", "use": "@vercel/node" },
+    { "src": "bot/api/setup.js",   "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/webhook", "dest": "bot/api/webhook.js" },
+    { "src": "/api/setup",   "dest": "bot/api/setup.js"   },
+    { "src": "/health",      "dest": "bot/api/setup.js"   }
+  ]
 }

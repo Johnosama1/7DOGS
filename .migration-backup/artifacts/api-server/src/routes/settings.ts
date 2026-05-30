@@ -33,7 +33,7 @@ router.get("/", async (req, res) => {
     getSettingValue("referrals_required", "5"),
     getSettingValue("referral_reward_type", "spins"),
     getSettingValue("referral_reward_amount", "1"),
-    getSettingValue("bot_username", "SevenDogsBot"),
+    getSettingValue("bot_username", "mini_7DOGS_bot"),
   ]);
 
   res.json({

@@ -26,8 +26,9 @@ router.get("/me", async (req, res) => {
     // New user — check for referral
     let referrerId: number | undefined;
     if (referralCode) {
+      // referralCode is the referrer's telegramId (from t.me/bot?start={telegramId})
       const referrer = await db.query.usersTable.findFirst({
-        where: eq(usersTable.id, parseInt(referralCode)),
+        where: eq(usersTable.telegramId, referralCode),
       });
       if (referrer && referrer.telegramId !== telegramId) {
         referrerId = referrer.id;
@@ -154,6 +155,49 @@ router.get("/stats", async (req, res) => {
     totalSpins: spinsRow?.count ?? 0,
     totalRedemptions: redRow?.count ?? 0,
   });
+});
+
+// GET /api/users/photo/:telegramId — fetch Telegram profile photo URL
+router.get("/photo/:telegramId", async (req, res) => {
+  const telegramId = req.params.telegramId;
+  const botToken = process.env.BOT_TOKEN;
+
+  if (!botToken) {
+    res.status(503).json({ error: "BOT_TOKEN not configured" });
+    return;
+  }
+
+  try {
+    const photosResp = await fetch(
+      `https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${telegramId}&limit=1`
+    );
+    const photosData = await photosResp.json() as any;
+
+    if (!photosData.ok || !photosData.result?.photos?.length) {
+      res.json({ photoUrl: null });
+      return;
+    }
+
+    // Get the largest photo (last in the array)
+    const photos = photosData.result.photos[0];
+    const largestPhoto = photos[photos.length - 1];
+    const fileId = largestPhoto.file_id;
+
+    const fileResp = await fetch(
+      `https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`
+    );
+    const fileData = await fileResp.json() as any;
+
+    if (!fileData.ok || !fileData.result?.file_path) {
+      res.json({ photoUrl: null });
+      return;
+    }
+
+    const photoUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
+    res.json({ photoUrl });
+  } catch {
+    res.json({ photoUrl: null });
+  }
 });
 
 // GET /api/users/:userId

@@ -9,7 +9,7 @@ import {
   spinsTable,
   redemptionsTable,
 } from "@workspace/db";
-import { eq, like, or, sql, desc, ilike } from "drizzle-orm";
+import { eq, or, sql, desc, ilike } from "drizzle-orm";
 import crypto from "crypto";
 import {
   AdminVerifyBody,
@@ -30,11 +30,31 @@ import {
 
 const router = Router();
 
-export const ADMIN_TOKENS = new Set<string>();
+// ─── Deterministic token (survives server restarts) ──────────────────────────
+function generateToken(password: string): string {
+  const secret = process.env.TOKEN_SECRET ?? "7dogs-admin-secret-key";
+  return crypto.createHmac("sha256", secret).update(password).digest("hex");
+}
+
+function extractToken(req: any): string | null {
+  const xToken = req.headers["x-admin-token"];
+  if (xToken && typeof xToken === "string") return xToken;
+  const auth = req.headers["authorization"];
+  if (auth && typeof auth === "string" && auth.startsWith("Bearer ")) {
+    return auth.slice(7);
+  }
+  return null;
+}
 
 function validateToken(req: any, res: any): boolean {
-  const token = req.headers["x-admin-token"];
-  if (!token || !ADMIN_TOKENS.has(token as string)) {
+  const token = extractToken(req);
+  if (!token) {
+    res.status(401).json({ error: "Unauthorized" });
+    return false;
+  }
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin123";
+  const expected = generateToken(adminPassword);
+  if (token !== expected) {
     res.status(401).json({ error: "Unauthorized" });
     return false;
   }
@@ -60,12 +80,7 @@ router.post("/verify", async (req, res) => {
     return;
   }
 
-  const token = crypto.randomBytes(32).toString("hex");
-  ADMIN_TOKENS.add(token);
-
-  // Auto-expire token after 24 hours
-  setTimeout(() => ADMIN_TOKENS.delete(token), 24 * 60 * 60 * 1000);
-
+  const token = generateToken(password);
   await logAdminAction("admin_login", "Admin logged in");
   res.json({ token });
 });
@@ -91,7 +106,6 @@ router.get("/users", async (req, res) => {
     const searchCondition = or(
       ilike(usersTable.username, `%${search}%`),
       ilike(usersTable.firstName, `%${search}%`),
-      usersTable.telegramId.mapWith(String) ? ilike(usersTable.telegramId, `%${search}%`) : undefined
     );
     // @ts-ignore
     query = query.where(searchCondition);
@@ -199,7 +213,7 @@ router.post("/wheel", async (req, res) => {
 
   const parsed = AdminCreateSegmentBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid body" });
+    res.status(400).json({ error: "Invalid body", details: parsed.error.errors });
     return;
   }
 
@@ -242,11 +256,10 @@ router.patch("/wheel/:segmentId", async (req, res) => {
   }
 
   const { segmentId } = paramsP.data;
-  const updates = bodyP.data;
 
   const [segment] = await db
     .update(wheelSegmentsTable)
-    .set(updates)
+    .set(bodyP.data)
     .where(eq(wheelSegmentsTable.id, segmentId))
     .returning();
 
@@ -308,7 +321,7 @@ router.post("/gifts", async (req, res) => {
 
   const parsed = AdminCreateGiftBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid body" });
+    res.status(400).json({ error: "Invalid body", details: parsed.error.errors });
     return;
   }
 
@@ -394,7 +407,7 @@ router.patch("/settings", async (req, res) => {
 
   const parsed = AdminUpdateSettingsBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid body" });
+    res.status(400).json({ error: "Invalid body", details: parsed.error.errors });
     return;
   }
 
@@ -424,7 +437,6 @@ router.patch("/settings", async (req, res) => {
 
   await logAdminAction("update_settings", `Updated: ${Object.keys(data).join(", ")}`);
 
-  // Return updated settings
   const getVal = async (k: string, def: string) => {
     const row = await db.query.settingsTable.findFirst({ where: eq(settingsTable.key, k) });
     return row?.value ?? def;
@@ -440,7 +452,7 @@ router.patch("/settings", async (req, res) => {
     getVal("referrals_required", "5"),
     getVal("referral_reward_type", "spins"),
     getVal("referral_reward_amount", "1"),
-    getVal("bot_username", "SevenDogsBot"),
+    getVal("bot_username", "mini_7DOGS_bot"),
   ]);
 
   res.json({
@@ -478,14 +490,13 @@ router.post("/broadcast", async (req, res) => {
     return;
   }
 
-  // Fetch all users with a telegram ID
   const users = await db.select({ telegramId: usersTable.telegramId }).from(usersTable);
 
   const total = users.length;
   let sent = 0;
   let failed = 0;
 
-  const DELAY_MS = 50; // safe rate: ~20 msg/s (Telegram limit is 30/s)
+  const DELAY_MS = 50;
 
   for (const user of users) {
     try {
@@ -516,7 +527,6 @@ router.post("/broadcast", async (req, res) => {
       failed++;
     }
 
-    // Rate-limit: small delay between messages
     await new Promise((r) => setTimeout(r, DELAY_MS));
   }
 
@@ -543,6 +553,102 @@ router.get("/logs", async (req, res) => {
     details: l.details,
     createdAt: l.createdAt.toISOString(),
   })));
+});
+
+// POST /api/admin/set-menu-button
+// Sets the persistent Telegram bot menu button to open the mini app
+router.post("/set-menu-button", async (req, res) => {
+  if (!validateToken(req, res)) return;
+
+  const { miniAppUrl } = req.body as { miniAppUrl?: string };
+  const url = miniAppUrl || process.env.MINI_APP_URL;
+
+  if (!url) {
+    res.status(400).json({ error: "miniAppUrl is required (or set MINI_APP_URL env var)" });
+    return;
+  }
+
+  const botToken = process.env.BOT_TOKEN;
+  if (!botToken) {
+    res.status(503).json({ error: "BOT_TOKEN not configured" });
+    return;
+  }
+
+  try {
+    const resp = await fetch(`https://api.telegram.org/bot${botToken}/setChatMenuButton`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        menu_button: {
+          type: "web_app",
+          text: "🎰 Open 7DOGS App",
+          web_app: { url },
+        },
+      }),
+    });
+
+    const data = await resp.json() as { ok: boolean; description?: string };
+
+    if (!data.ok) {
+      res.status(400).json({ error: data.description ?? "Telegram API error" });
+      return;
+    }
+
+    await logAdminAction("set_menu_button", `Menu button set to: ${url}`);
+    res.json({ ok: true, url });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/fetch-og-image?url=...
+// Fetches Open Graph image from a URL (used for t.me/nft gift links)
+router.get("/fetch-og-image", async (req, res) => {
+  if (!validateToken(req, res)) return;
+
+  const { url } = req.query as { url?: string };
+  if (!url) {
+    res.status(400).json({ error: "url is required" });
+    return;
+  }
+
+  try {
+    const response = await fetch(decodeURIComponent(url), {
+      headers: {
+        "User-Agent": "TelegramBot/1.0 (compatible; like Twitterbot)",
+        "Accept": "text/html,application/xhtml+xml",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!response.ok) {
+      res.json({ imageUrl: null });
+      return;
+    }
+
+    const html = await response.text();
+
+    // Try og:image first, then twitter:image
+    const patterns = [
+      /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
+      /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
+    ];
+
+    let imageUrl: string | null = null;
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match?.[1]) {
+        imageUrl = match[1];
+        break;
+      }
+    }
+
+    res.json({ imageUrl });
+  } catch {
+    res.json({ imageUrl: null });
+  }
 });
 
 export default router;

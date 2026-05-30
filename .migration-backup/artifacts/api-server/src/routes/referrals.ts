@@ -40,7 +40,7 @@ router.get("/", async (req, res) => {
   const referralsRequired = parseInt(refRequiredRow?.value ?? "5");
   const rewardType = refRewardTypeRow?.value ?? "spins";
   const rewardAmount = parseInt(refRewardAmountRow?.value ?? "1");
-  const botUsername = botUsernameRow?.value ?? "SevenDogsBot";
+  const botUsername = botUsernameRow?.value ?? "mini_7DOGS_bot";
 
   // Get referred users
   const myReferrals = await db.query.referralsTable.findMany({
@@ -67,7 +67,7 @@ router.get("/", async (req, res) => {
 
   res.json({
     userId: user.id,
-    referralLink: `https://t.me/${botUsername}?start=${user.id}`,
+    referralLink: `https://t.me/${botUsername}?start=${user.telegramId}`,
     totalReferrals: user.totalReferrals,
     referralsRequired,
     rewardType,

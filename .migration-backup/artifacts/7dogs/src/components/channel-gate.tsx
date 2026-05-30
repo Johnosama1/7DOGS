@@ -18,7 +18,14 @@ export function ChannelGate({ children }: ChannelGateProps) {
 
   const { data: unjoinedChannels, isLoading, refetch, isFetching } = useCheckChannelMembership(
     { telegramId: user?.telegramId || "" },
-    { query: { enabled: !!user?.telegramId, queryKey: ["/api/channels/check", user?.telegramId, checkKey] } }
+    {
+      query: {
+        enabled: !!user?.telegramId,
+        queryKey: ["/api/channels/check", user?.telegramId, checkKey],
+        staleTime: 0,
+        gcTime: 0,
+      },
+    }
   );
 
   const handleCheck = () => {

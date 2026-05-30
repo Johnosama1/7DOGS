@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { useUser } from "@/context/user-context";
 import { useLang } from "@/context/language-context";
 import { useGetReferrals } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Copy, Users, Link as LinkIcon, Gift } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Copy, Check, Users, Link as LinkIcon, Gift } from "lucide-react";
+
 
 export default function ReferralsPage() {
   const { user } = useUser();
@@ -13,12 +13,13 @@ export default function ReferralsPage() {
     { userId: user?.id || 0 },
     { query: { enabled: !!user?.id } as never }
   );
-  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    if (referrals?.referralLink) {
+    if (referrals?.referralLink && !copied) {
       navigator.clipboard.writeText(referrals.referralLink);
-      toast({ title: t.copied, description: t.copiedDesc });
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -50,7 +51,9 @@ export default function ReferralsPage() {
           <span className="text-muted-foreground">{t.progress}</span>
           <span className="font-bold text-primary">{referrals.totalReferrals} / {referrals.referralsRequired}</span>
         </div>
-        <Progress value={progressPercentage} className="h-2 mb-4 bg-background" />
+        <div className="h-2 mb-4 w-full overflow-hidden rounded-full bg-background">
+          <div className="h-full bg-primary transition-all" style={{ width: `${progressPercentage}%` }} />
+        </div>
         <p className="text-sm text-muted-foreground">
           {t.reward}: <strong className="text-foreground">{referrals.rewardAmount} {referrals.rewardType}</strong>
         </p>
@@ -61,8 +64,14 @@ export default function ReferralsPage() {
           <LinkIcon className="w-4 h-4 text-muted-foreground mr-2 shrink-0" />
           <span className="text-sm truncate text-muted-foreground">{referrals.referralLink}</span>
         </div>
-        <Button onClick={handleCopy} className="bg-primary text-primary-foreground hover:bg-primary/90 h-auto px-6 rounded-xl">
-          <Copy className="w-4 h-4" />
+        <Button
+          onClick={handleCopy}
+          className="bg-primary text-primary-foreground hover:bg-primary/90 h-auto px-6 rounded-xl transition-all"
+        >
+          {copied
+            ? <Check className="w-4 h-4 text-black" />
+            : <Copy className="w-4 h-4" />
+          }
         </Button>
       </div>
 
